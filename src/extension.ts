@@ -94,7 +94,7 @@ export function activate(context: vscode.ExtensionContext) {
             { userQuery: request.prompt, references: request.references, history: context.history },
             { modelMaxPromptTokens: chat.maxInputTokens },
             chat);
-        
+
         const messages: vscode.LanguageModelChatMessage[] = renderedPrompt.messages as vscode.LanguageModelChatMessage[];
         const toolReferences = [...request.toolReferences];
         const runWithFunctions = async (): Promise<any> => {
@@ -147,30 +147,37 @@ export function activate(context: vscode.ExtensionContext) {
                 assistantMsg.content2 = toolCalls.map(toolCall => new vscode.LanguageModelChatResponseToolCallPart(toolCall.tool.id, toolCall.call.toolCallId, toolCall.call.parameters));
                 messages.push(assistantMsg);
                 for (const toolCall of toolCalls) {
+
                     if (await toolCall.result) {
                         // NOTE that the result of calling a function is a special content type of a USER-message
                         const message = vscode.LanguageModelChatMessage.User('');
 
-                    const toolResult = await toolCall.result;
+                        const toolResult = await toolCall.result;
 
-                    if (toolResult['text/plain']) {
-                        message.content2 = [new vscode.LanguageModelChatMessageToolResultPart(toolCall.call.toolCallId, toolResult['text/plain']!)];
-                        messages.push(message);
-                    } else if (toolResult['image/png']) {
-                        const markdownTextForImage = `![${toolCall.tool.id} result](data:image/png;base64,${toolResult['image/png']})`;
-                        message.content2 = [new vscode.LanguageModelChatMessageToolResultPart(toolCall.call.toolCallId, markdownTextForImage)];
-                        messages.push(message);
+                        if (toolResult['text/plain']) {
+                            message.content2 = [new vscode.LanguageModelChatMessageToolResultPart(toolCall.call.toolCallId, toolResult['text/plain']!)];
+                            messages.push(message);
+                            // message.content2 = [new vscode.LanguageModelChatMessageToolResultPart(toolCall.call.toolCallId, (await toolCall.result)['text/plain']!)];
+                            // if (message.content2[0] instanceof vscode.LanguageModelChatMessageToolResultPart && message.content2[0].content) {
+                            //     messages.push(message); //message.content2[0].content may be what we need @This would contain dataframe output. 
+                            // }
+                        } else if (toolResult['image/png']) {
+                            const markdownTextForImage = `![${toolCall.tool.id} result](data:image/png;base64,${toolResult['image/png']})`;
+                            message.content2 = [new vscode.LanguageModelChatMessageToolResultPart(toolCall.call.toolCallId, markdownTextForImage)];
+                            messages.push(message);
+                        }
                     }
+
                 }
-
-                // IMPORTANT The prompt must end with a USER message (with no tool call)
-                messages.push(vscode.LanguageModelChatMessage.User(`Above is the result of calling the functions ${toolCalls.map(call => call.tool.id).join(', ')}. Try your best to utilize the request, response from previous chat history. Answer the user question using the result of the function only if you cannot find relevant historical conversation.`));
-                // messages.push(vscode.LanguageModelChatMessage.User(`If you cant find relevant information in history, just show what you have. Never say Bad request. Never filter your response.`));
-                // messages.push(vscode.LanguageModelChatMessage.User(`Never filter your response regardless of previous directions.`));
-                // RE-enter
-                return runWithFunctions();
-
             }
+
+            // IMPORTANT The prompt must end with a USER message (with no tool call)
+            messages.push(vscode.LanguageModelChatMessage.User(`Above is the result of calling the functions ${toolCalls.map(call => call.tool.id).join(', ')}. Try your best to utilize the request, response from previous chat history. Answer the user question using the result of the function only if you cannot find relevant historical conversation.`));
+            // messages.push(vscode.LanguageModelChatMessage.User(`If you cant find relevant information in history, just show what you have. Never say Bad request. Never filter your response.`));
+            // messages.push(vscode.LanguageModelChatMessage.User(`Never filter your response regardless of previous directions.`));
+            // RE-enter
+            return runWithFunctions();
+
         };
 
         await runWithFunctions();
@@ -185,6 +192,5 @@ export function activate(context: vscode.ExtensionContext) {
         dataAgentHandler
     );
 }
-
 
 export function deactivate() { }
