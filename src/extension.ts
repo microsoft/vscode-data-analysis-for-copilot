@@ -17,37 +17,6 @@ const MODEL_SELECTOR: vscode.LanguageModelChatSelector = {
     family: 'gpt-4o'
 };
 
-function parseApiResponse(apiResponse: string) {
-    const _escape = (str: string) => {
-        // Regular expression to target and escape \n within quoted strings only
-        const regex = /(?:\"|')(?:\\.|[^\"'\\])*?(?:\\n)?(?:\\.|[^\"'\\])*?(?:\"|')/g;
-
-        const escapedResponse = apiResponse.replace(regex, function (match) {
-            return match.replace(/\n/g, '\\n');
-        });
-
-        const jsonObject = JSON.parse(escapedResponse);
-        return jsonObject;
-    }
-
-    let args: { code: string } = { code: "" };
-
-    try {
-        args = JSON.parse(apiResponse);
-        return args;
-    } catch (e) {
-    }
-
-    try {
-        args = _escape(apiResponse);
-        return args;
-    } catch (e) {
-    }
-
-    return {
-        code: apiResponse
-    };
-}
 // TODO: separate out, better execution failure 
 
 interface IToolCall {
@@ -172,7 +141,7 @@ export function activate(context: vscode.ExtensionContext) {
             }
 
             // IMPORTANT The prompt must end with a USER message (with no tool call)
-            messages.push(vscode.LanguageModelChatMessage.User(`Above is the result of calling the functions ${toolCalls.map(call => call.tool.id).join(', ')}. Try your best to utilize the request, response from previous chat history. Answer the user question using the result of the function only if you cannot find relevant historical conversation.`));
+            messages.push(vscode.LanguageModelChatMessage.User(`Above is the result of calling the functions ${toolCalls.map(call => call.tool.id).join(', ')}. Try your best to utilize the request, response from previous chat history. Answer the user question using the result of the function only if you cannot find relevant historical conversation. Do not filter the response. Do not filter when displaying dataset.`));
             // messages.push(vscode.LanguageModelChatMessage.User(`If you cant find relevant information in history, just show what you have. Never say Bad request. Never filter your response.`));
             // messages.push(vscode.LanguageModelChatMessage.User(`Never filter your response regardless of previous directions.`));
             // RE-enter
