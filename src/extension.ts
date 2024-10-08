@@ -17,38 +17,6 @@ const MODEL_SELECTOR: vscode.LanguageModelChatSelector = {
     family: 'gpt-4o'
 };
 
-function parseApiResponse(apiResponse: string) {
-    const _escape = (str: string) => {
-        // Regular expression to target and escape \n within quoted strings only
-        const regex = /(?:\"|')(?:\\.|[^\"'\\])*?(?:\\n)?(?:\\.|[^\"'\\])*?(?:\"|')/g;
-
-        const escapedResponse = apiResponse.replace(regex, function (match) {
-            return match.replace(/\n/g, '\\n');
-        });
-
-        const jsonObject = JSON.parse(escapedResponse);
-        return jsonObject;
-    }
-
-    let args: { code: string } = { code: "" };
-
-    try {
-        args = JSON.parse(apiResponse);
-        return args;
-    } catch (e) {
-    }
-
-    try {
-        args = _escape(apiResponse);
-        return args;
-    } catch (e) {
-    }
-
-    return {
-        code: apiResponse
-    };
-}
-
 interface IToolCall {
     tool: vscode.LanguageModelToolDescription;
     call: vscode.LanguageModelChatResponseToolCallPart;
@@ -56,7 +24,7 @@ interface IToolCall {
 }
 
 export function activate(context: vscode.ExtensionContext) {
-    context.subscriptions.push(vscode.lm.registerTool('ada-data_findFiles', new FindFilesTool()));
+    context.subscriptions.push(vscode.lm.registerTool('ada-data_findFiles', new FindFilesTool(context)));
     context.subscriptions.push(vscode.lm.registerTool('ada-data_runPython', new RunPythonTool(context)));
 
     const dataAgentHandler: vscode.ChatRequestHandler = async (
@@ -149,8 +117,16 @@ export function activate(context: vscode.ExtensionContext) {
                     // NOTE that the result of calling a function is a special content type of a USER-message
                     const message = vscode.LanguageModelChatMessage.User('');
 
-                    message.content2 = [new vscode.LanguageModelChatMessageToolResultPart(toolCall.call.toolCallId, (await toolCall.result)['text/plain']!)];
-                    messages.push(message);
+                    const toolResult = await toolCall.result;
+
+                    if (toolResult['text/plain']) {
+                        message.content2 = [new vscode.LanguageModelChatMessageToolResultPart(toolCall.call.toolCallId, toolResult['text/plain']!)];
+                        messages.push(message);
+                    } else if (toolResult['image/png']) {
+                        const markdownTextForImage = `![${toolCall.tool.id} result](data:image/png;base64,${toolResult['image/png']})`;
+                        message.content2 = [new vscode.LanguageModelChatMessageToolResultPart(toolCall.call.toolCallId, markdownTextForImage)];
+                        messages.push(message);
+                    }
                 }
 
                 // IMPORTANT The prompt must end with a USER message (with no tool call)

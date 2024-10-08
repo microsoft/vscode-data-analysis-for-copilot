@@ -57,7 +57,7 @@
 				"tags": [
 				],
 				"displayName": "Run Python",
-				"modelDescription": "Execute Python code locally using Pyodide, providing access to Python's extensive functionality. This tool extends the LLM's capabilities by allowing it to run Python code for a wide range of computational tasks and data manipulations that it cannot perform directly",
+				"modelDescription": "Execute Python code locally using Pyodide, providing access to Python's extensive functionality. This tool extends the LLM's capabilities by allowing it to run Python code for a wide range of computational tasks and data manipulations that it cannot perform directly. When you know the workspace folder path and the file path, use the relative path to the file when generating code.",
 				"parametersSchema": {
 					"type": "object",
 					"properties": {
@@ -69,7 +69,8 @@
 					"required": ["code"]
 				},
 				"supportedContentTypes": [
-					"text/plain"
+					"text/plain",
+					"image/png"
 				]
 			}
 		]
