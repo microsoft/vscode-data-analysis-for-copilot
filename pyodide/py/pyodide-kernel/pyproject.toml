@@ -1,0 +1,24 @@
+[build-system]
+requires = ["hatchling>=1.11"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "pyodide_kernel/__init__.py"
+
+[project]
+name = "pyodide-kernel"
+authors = [
+    {name = "JupyterLite Contributors"},
+]
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+dynamic = ["version", "description"]
+classifiers = [
+    "License :: OSI Approved :: BSD License",
+]
+
+[project.urls]
+Source = "https://github.com/jupyterlite/pyodide-kernel"
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["E402"]
