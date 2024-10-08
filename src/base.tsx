@@ -81,6 +81,8 @@ export class BasePrompt extends PromptElement<PromptProps, void> {
 					For example, when information about previously constructed chart/dataframe is available, use that information to answer the user question. 
 					Do not execute further code just simply give me result from previous prompt.
 					Do not run or perform function call with undefined.
+					Always ask the user if they are happy with the result of the function call.
+					Always suggest them the next step in data science milestones. 
 				</UserMessage>
 				{csvConditionalMessage}
 				{historyMessages}
