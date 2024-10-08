@@ -57,14 +57,15 @@ export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParamet
         const kernel = await this._kernelPromise;
         const result = await execute(kernel, options.parameters.code);
 
-
+		let resultData: { [key: string]: any } = {};
         if (result && result["text/plain"]) {
-            return {
-                'text/plain': result["text/plain"]
-            };
+			resultData["text/plain"] = result["text/plain"];
         }
 
-        return null;
+		if (result && result["application/vnd.code.notebook.error"]) {
+			resultData["application/vnd.code.notebook.error"] = result["application/vnd.code.notebook.error"];
+		}
+        return resultData;
 	}
 
 	async prepareToolInvocation(
@@ -72,7 +73,7 @@ export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParamet
 		token: vscode.CancellationToken
 	) {
 		return {
-			invocationMessage: `Evaluating code "${options.parameters.code}"`,
+			invocationMessage: `Evaluating \`\`\`${JSON.stringify(options.parameters.code)}\`\`\``,
 		};
 	}
 }
