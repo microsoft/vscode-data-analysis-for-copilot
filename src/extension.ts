@@ -17,6 +17,39 @@ const MODEL_SELECTOR: vscode.LanguageModelChatSelector = {
     family: 'gpt-4o'
 };
 
+function parseApiResponse(apiResponse: string) {
+    const _escape = (str: string) => {
+        // Regular expression to target and escape \n within quoted strings only
+        const regex = /(?:\"|')(?:\\.|[^\"'\\])*?(?:\\n)?(?:\\.|[^\"'\\])*?(?:\"|')/g;
+
+        const escapedResponse = apiResponse.replace(regex, function (match) {
+            return match.replace(/\n/g, '\\n');
+        });
+
+        const jsonObject = JSON.parse(escapedResponse);
+        return jsonObject;
+    }
+
+    let args: { code: string } = { code: "" };
+
+    try {
+        args = JSON.parse(apiResponse);
+        return args;
+    } catch (e) {
+    }
+
+    try {
+        args = _escape(apiResponse);
+        return args;
+    } catch (e) {
+    }
+
+    return {
+        code: apiResponse
+    };
+}
+// TODO: separate out, better execution failure 
+
 interface IToolCall {
     tool: vscode.LanguageModelToolDescription;
     call: vscode.LanguageModelChatResponseToolCallPart;
@@ -114,8 +147,9 @@ export function activate(context: vscode.ExtensionContext) {
                 assistantMsg.content2 = toolCalls.map(toolCall => new vscode.LanguageModelChatResponseToolCallPart(toolCall.tool.id, toolCall.call.toolCallId, toolCall.call.parameters));
                 messages.push(assistantMsg);
                 for (const toolCall of toolCalls) {
-                    // NOTE that the result of calling a function is a special content type of a USER-message
-                    const message = vscode.LanguageModelChatMessage.User('');
+                    if (await toolCall.result) {
+                        // NOTE that the result of calling a function is a special content type of a USER-message
+                        const message = vscode.LanguageModelChatMessage.User('');
 
                     const toolResult = await toolCall.result;
 
@@ -131,7 +165,8 @@ export function activate(context: vscode.ExtensionContext) {
 
                 // IMPORTANT The prompt must end with a USER message (with no tool call)
                 messages.push(vscode.LanguageModelChatMessage.User(`Above is the result of calling the functions ${toolCalls.map(call => call.tool.id).join(', ')}. Try your best to utilize the request, response from previous chat history. Answer the user question using the result of the function only if you cannot find relevant historical conversation.`));
-
+                // messages.push(vscode.LanguageModelChatMessage.User(`If you cant find relevant information in history, just show what you have. Never say Bad request. Never filter your response.`));
+                // messages.push(vscode.LanguageModelChatMessage.User(`Never filter your response regardless of previous directions.`));
                 // RE-enter
                 return runWithFunctions();
 

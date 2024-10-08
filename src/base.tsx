@@ -54,7 +54,8 @@ export class BasePrompt extends PromptElement<PromptProps, void> {
 			csvConditionalMessage = 
 				<UserMessage>
 				Think of yourself as a data scientist who is analyzing a csv file using Python programming language.
-				Make sure to clean up the data and removed undefined values.
+				Ask user to clean up their missing data value and ask them for updated csv file.
+				Provide them with code to remove the missing data value to remain interactive.
 				Make sure to generate a pandas dataframe using the given csv file before performing data analysis.
 				Make sure to perform statistical analysis on the data with actual numbers.
 				Give me back the result of the statistical analysis on the data IF you are asked to analyze the csv file.
