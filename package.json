@@ -70,7 +70,8 @@
 				},
 				"supportedContentTypes": [
 					"text/plain",
-					"image/png"
+					"image/png",
+					"application/vnd.code.notebook.error"
 				]
 			}
 		]

@@ -101,10 +101,9 @@ export function activate(context: vscode.ExtensionContext) {
                             throw new Error(`Got invalid tool use parameters: "${part.parameters}". (${(err as Error).message})`);
                         }
 
-                        const requestedContentType = 'text/plain';
                         toolCalls.push({
                             call: part,
-                            result: vscode.lm.invokeTool(tool.id, { parameters: JSON.parse(part.parameters), toolInvocationToken: request.toolInvocationToken, requestedContentTypes: [requestedContentType] }, token),
+                            result: vscode.lm.invokeTool(tool.id, { parameters: JSON.parse(part.parameters), toolInvocationToken: request.toolInvocationToken, requestedContentTypes: ['text/plain', 'image/png', 'application/vnd.code.notebook.error'] }, token),
                             tool
                         });
                     }
@@ -116,27 +115,29 @@ export function activate(context: vscode.ExtensionContext) {
                 assistantMsg.content2 = toolCalls.map(toolCall => new vscode.LanguageModelChatResponseToolCallPart(toolCall.tool.id, toolCall.call.toolCallId, toolCall.call.parameters));
                 messages.push(assistantMsg);
                 for (const toolCall of toolCalls) {
+                    // NOTE that the result of calling a function is a special content type of a USER-message
+                    const toolResult = await toolCall.result;
+                    let toolResultInserted = false;
 
-                    if (await toolCall.result) {
-                        // NOTE that the result of calling a function is a special content type of a USER-message
+                    if (toolResult['text/plain']) {
                         const message = vscode.LanguageModelChatMessage.User('');
-
-                        const toolResult = await toolCall.result;
-
-                        if (toolResult['text/plain']) {
-                            message.content2 = [new vscode.LanguageModelChatMessageToolResultPart(toolCall.call.toolCallId, toolResult['text/plain']!)];
-                            messages.push(message);
-                            // message.content2 = [new vscode.LanguageModelChatMessageToolResultPart(toolCall.call.toolCallId, (await toolCall.result)['text/plain']!)];
-                            // if (message.content2[0] instanceof vscode.LanguageModelChatMessageToolResultPart && message.content2[0].content) {
-                            //     messages.push(message); //message.content2[0].content may be what we need @This would contain dataframe output. 
-                            // }
-                        } else if (toolResult['image/png']) {
-                            const markdownTextForImage = `![${toolCall.tool.id} result](data:image/png;base64,${toolResult['image/png']})`;
-                            message.content2 = [new vscode.LanguageModelChatMessageToolResultPart(toolCall.call.toolCallId, markdownTextForImage)];
-                            messages.push(message);
-                        }
+                        message.content2 = [new vscode.LanguageModelChatMessageToolResultPart(toolCall.call.toolCallId, toolResult['text/plain']!)];
+                        messages.push(message);
+                        toolResultInserted = true;
+                    }
+                    
+                    if (toolResult['image/png']) {
+                        const message = vscode.LanguageModelChatMessage.User('');
+                        const markdownTextForImage = `![${toolCall.tool.id} result](data:image/png;base64,${toolResult['image/png']})`;
+                        message.content2 = [new vscode.LanguageModelChatMessageToolResultPart(toolCall.call.toolCallId, markdownTextForImage)];
+                        messages.push(message);
+                        toolResultInserted = true;
                     }
 
+                    if (!toolResultInserted) {
+                        // we need to debug
+                        console.log(toolResult);
+                    }
                 }
             }
 
