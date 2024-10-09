@@ -161,6 +161,20 @@ export function activate(context: vscode.ExtensionContext) {
                         toolResultInserted = true;
                     }
 
+                    if (toolResult['application/vnd.code.notebook.error']) {
+                        const message = vscode.LanguageModelChatMessage.User('');
+                        const error: Error = toolResult['application/vnd.code.notebook.error'];
+                        message.content2 = [
+                            new vscode.LanguageModelChatMessageToolResultPart(
+                                toolCall.call.toolCallId,
+                                `Error: ${error.message} (${error.name})\n${error.stack}`,
+                                true
+                            )
+                        ];
+                        messages.push(message);
+                        toolResultInserted = true;
+                    }
+
                     if (!toolResultInserted) {
                         // we need to debug
                         console.log(toolResult);
