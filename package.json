@@ -25,7 +25,7 @@
         "chatParticipants": [
             {
                 "id": "ada.data",
-                "fullName": "Advacned Data Analytics",
+                "fullName": "Advanced Data Analytics",
                 "name": "ada",
                 "description": "I can help you with data analytics",
                 "isSticky": true
@@ -83,7 +83,8 @@
         "vscode:prepublish": "npm run compile",
         "compile": "npm run worker && npm run compile-extension",
         "compile-extension": "tsc -p ./",
-        "watch": "concurrently \"npm run compile-extension\" \"npm run worker-watch\"",
+        "watch-extension": "tsc -p ./ --watch",
+        "watch": "concurrently \"npm run watch-extension\" \"npm run worker-watch\"",
         "download-api": "dts dev",
         "lint": "eslint src",
         "lint-fix": "eslint --fix src",
