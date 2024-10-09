@@ -1,41 +1,40 @@
 {
-	"name": "chat-sample",
-	"publisher": "vscode-samples",
-	"displayName": "Copilot Chat Sample",
-	"description": "Sample chat extension, a trusty cat tutor that will can teach you computer science topics.",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/Microsoft/vscode-extension-samples"
-	},
-	"version": "0.1.0",
-	"engines": {
-		"vscode": "^1.95.0"
-	},
-	"categories": [
-		"AI",
-		"Chat"
-	],
-	"activationEvents": [],
-	"enabledApiProposals": [
-		"chatVariableResolver",
-		"lmTools",
-		"chatProvider"
-	],
-	"contributes": {
-		"chatParticipants": [
-			{
-				"id": "ada.data",
-				"fullName": "Advacned Data Analytics",
-				"name": "ada",
-				"description": "I can help you with data analytics",
-				"isSticky": true
-			}
-		],
-		"languageModelTools": [
-			{
-				"id": "ada-data_findFiles",
-                "tags": [
-                ],
+    "name": "chat-sample",
+    "publisher": "vscode-samples",
+    "displayName": "Copilot Chat Sample",
+    "description": "Sample chat extension, a trusty cat tutor that will can teach you computer science topics.",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Microsoft/vscode-extension-samples"
+    },
+    "version": "0.1.0",
+    "engines": {
+        "vscode": "^1.95.0"
+    },
+    "categories": [
+        "AI",
+        "Chat"
+    ],
+    "activationEvents": [],
+    "enabledApiProposals": [
+        "chatVariableResolver",
+        "lmTools",
+        "chatProvider"
+    ],
+    "contributes": {
+        "chatParticipants": [
+            {
+                "id": "ada.data",
+                "fullName": "Advacned Data Analytics",
+                "name": "ada",
+                "description": "I can help you with data analytics",
+                "isSticky": true
+            }
+        ],
+        "languageModelTools": [
+            {
+                "id": "ada-data_findFiles",
+                "tags": [],
                 "displayName": "Find Files",
                 "modelDescription": "Search for files in the current workspace",
                 "parametersSchema": {
@@ -46,72 +45,84 @@
                             "description": "Search for files that match this glob pattern"
                         }
                     },
-                    "required": ["pattern"]
+                    "required": [
+                        "pattern"
+                    ]
                 },
                 "supportedContentTypes": [
                     "text/plain"
                 ]
-			},
-			{
-				"id": "ada-data_runPython",
-				"tags": [
-				],
-				"displayName": "Run Python",
-				"modelDescription": "Execute Python code locally using Pyodide, providing access to Python's extensive functionality. This tool extends the LLM's capabilities by allowing it to run Python code for a wide range of computational tasks and data manipulations that it cannot perform directly. When you know the workspace folder path and the file path, use the relative path to the file when generating code.",
-				"parametersSchema": {
-					"type": "object",
-					"properties": {
-						"code": {
-							"type": "string",
-							"description": "The Python code to run"
-						}
-					},
-					"required": ["code"]
-				},
-				"supportedContentTypes": [
-					"text/plain",
-					"image/png",
-					"application/vnd.code.notebook.error"
-				]
-			}
-		]
-	},
-	"main": "./out/extension.js",
-	"scripts": {
-		"vscode:prepublish": "npm run compile",
-		"compile": "npm run worker && npm run compile-extension",
-		"compile-extension": "tsc -p ./",
-		"watch": "tsc -watch -p ./",
-		"download-api": "dts dev",
-		"postinstall": "npm run download-api",
-		"worker": "esbuild ./src/execution/src/comlink.worker.ts --bundle --outfile=out/comlink.worker.js --sourcemap --format=esm --platform=node --target=es2018 --define:global=this",
-		"kernel-watch": "esbuild ./src/execution/src/test.ts --bundle --outfile=out/test.js --sourcemap --format=cjs --platform=node --target=es2018 --watch"
-	},
-	"devDependencies": {
-		"@types/node": "^20.5.9",
-		"@types/node-fetch": "^2.5.7",
-		"@types/vscode": "^1.74.0",
-		"@types/ws": "^8.5.10",
-		"@types/json-schema": "^7.0.15",
-		"@types/localforage": "^0.0.34",
-		"@vscode/dts": "^0.4.0",
-		"@vscode/prompt-tsx": "^0.2.11-alpha",
-		"esbuild": "^0.21.5",
-		"eslint": "^7.22.0",
-		"run-script-os": "^1.1.6",
-		"tslint": "^6.1.3",
-		"typescript": "^4.0.3"
-	},
-	"dependencies": {
-		"@jupyterlab/coreutils": "^6.2.2",
-		"@jupyterlab/services": "^7.2.2",
-		"@jupyterlite/contents": "^0.3.0",
-		"@jupyterlite/kernel": "^0.3.0",
-		"@lumino/coreutils": "^2.1.2",
-		"@vscode/python-extension": "^1.0.5",
-		"csv-parser": "^3.0.0",
-		"localforage": "^1.10.0",
-		"node-fetch": "^2.6.7",
-		"pyodide": "0.23.4"
-	}
+            },
+            {
+                "id": "ada-data_runPython",
+                "tags": [],
+                "displayName": "Run Python",
+                "modelDescription": "Execute Python code locally using Pyodide, providing access to Python's extensive functionality. This tool extends the LLM's capabilities by allowing it to run Python code for a wide range of computational tasks and data manipulations that it cannot perform directly. When you know the workspace folder path and the file path, use the relative path to the file when generating code.",
+                "parametersSchema": {
+                    "type": "object",
+                    "properties": {
+                        "code": {
+                            "type": "string",
+                            "description": "The Python code to run"
+                        }
+                    },
+                    "required": [
+                        "code"
+                    ]
+                },
+                "supportedContentTypes": [
+                    "text/plain",
+                    "image/png",
+                    "application/vnd.code.notebook.error"
+                ]
+            }
+        ]
+    },
+    "main": "./out/extension.js",
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "npm run worker && npm run compile-extension",
+        "compile-extension": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "download-api": "dts dev",
+        "lint": "eslint src",
+        "lint-fix": "eslint --fix src",
+        "format": "prettier --write *.js *.json 'src/**/*.ts*'",
+        "format-check": "prettier --check *.js *.json 'src/**/*.ts*'",
+        "postinstall": "npm run download-api",
+        "worker": "esbuild ./src/execution/src/comlink.worker.ts --bundle --outfile=out/comlink.worker.js --sourcemap --format=esm --platform=node --target=es2018 --define:global=this",
+        "kernel-watch": "esbuild ./src/execution/src/test.ts --bundle --outfile=out/test.js --sourcemap --format=cjs --platform=node --target=es2018 --watch"
+    },
+    "devDependencies": {
+        "@eslint/js": "^9.12.0",
+        "@types/json-schema": "^7.0.15",
+        "@types/localforage": "^0.0.34",
+        "@types/node": "^20.5.9",
+        "@types/node-fetch": "^2.5.7",
+        "@types/vscode": "^1.74.0",
+        "@types/ws": "^8.5.10",
+        "@typescript-eslint/eslint-plugin": "^8.8.1",
+        "@typescript-eslint/parser": "^8.8.1",
+        "@vscode/dts": "^0.4.0",
+        "@vscode/prompt-tsx": "^0.2.11-alpha",
+        "esbuild": "^0.21.5",
+        "eslint": "^9.12.0",
+        "globals": "^15.10.0",
+        "prettier": "^3.3.3",
+        "run-script-os": "^1.1.6",
+        "typescript": "^5.6.3",
+        "typescript-eslint": "^8.8.1"
+    },
+    "dependencies": {
+        "@jupyterlab/coreutils": "^6.2.2",
+        "@jupyterlab/services": "^7.2.2",
+        "@jupyterlite/contents": "^0.3.0",
+        "@jupyterlite/kernel": "^0.3.0",
+        "@lumino/coreutils": "^2.1.2",
+        "@vscode/python-extension": "^1.0.5",
+        "csv-parser": "^3.0.0",
+        "localforage": "^1.10.0",
+        "node-fetch": "^2.6.7",
+        "pyodide": "0.23.4"
+    }
 }
