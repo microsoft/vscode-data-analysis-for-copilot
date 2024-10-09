@@ -11,7 +11,7 @@ function copyPyodideFiles() {
 
 function copyNodeScripts() {
     const kernelSpecsDTS = path.join(__dirname, '..', 'node_modules/@jupyterlite/kernel/lib/kernelspecs.d.ts');
-    const commonDir = path.join(__dirname, '..', 'out', 'node');
+    const commonDir = path.join(__dirname, '..', 'pyodide', 'node');
     if (!fs.existsSync(commonDir)) {
         fs.mkdirSync(commonDir, { recursive: true });
     }
@@ -19,7 +19,7 @@ function copyNodeScripts() {
 }
 
 async function renameLicence() {
-    const dir = path.join(__dirname, '..', 'out');
+    const dir = path.join(__dirname, '..', 'pyodide');
     const oldLic = path.join(dir, 'LICENSE');
     const newLic = path.join(dir, 'PYODIDE_LICENSE');
     if (!fs.existsSync(oldLic) && fs.existsSync(newLic)) {

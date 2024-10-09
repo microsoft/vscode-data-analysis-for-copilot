@@ -34,7 +34,7 @@ export async function downloadPyodideKernel() {
     const tarFile = path.join(tmpdir(), fileToDownload.name);
     await downloadFile(fileToDownload.url, tarFile);
     console.debug(`Downloaded to ${tarFile}`);
-    const dir = path.join(__dirname, '..', 'out');
+    const dir = path.join(__dirname, '..', 'pyodide');
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir);
     }

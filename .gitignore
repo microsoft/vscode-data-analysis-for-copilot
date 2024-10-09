@@ -400,6 +400,7 @@ FodyWeavers.xsd
 
 *.d.ts
 out/
+pyodide/
 **/.DS_Store
 
 dist/

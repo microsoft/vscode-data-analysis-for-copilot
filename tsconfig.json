@@ -9,7 +9,7 @@
         "module": "CommonJS",
         "moduleResolution": "node",
         "emitDeclarationOnly": true,
-        "outDir": "out",
+        "outDir": "pyodide",
         "baseUrl": ".",
         "rootDir": "./src",
         "noEmitOnError": true,
@@ -25,5 +25,5 @@
         "typeRoots": ["./node_modules/@types"]
     },
     "include": ["src/**/*", "vscode.*"],
-    "exclude": ["./node_modules", "./out", "./dist", "./build"]
+    "exclude": ["./node_modules", "./out", "./pyodide", "./dist", "./build"]
 }
