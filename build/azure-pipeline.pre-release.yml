@@ -1,0 +1,43 @@
+# Run on a schedule
+trigger: none
+pr: none
+
+# schedules:
+#   - cron: '0 9 * * 1-5' # 9am UTC, Monday-Friday (2am PDT, after VS Code pre-release builds which is 11pm PDT)
+#     displayName: Nightly Release Schedule
+#     branches:
+#       include:
+#         - main
+
+resources:
+  repositories:
+    - repository: templates
+      type: github
+      name: microsoft/vscode-engineering
+      ref: main
+      endpoint: Monaco
+
+parameters:
+  - name: publishExtension
+    displayName: 🚀 Publish Extension
+    type: boolean
+    default: false
+
+extends:
+  template: azure-pipelines/extension/pre-release.yml@templates
+  parameters:
+    ghCreateTag: false
+    standardizedVersioning: true
+    # l10nSourcePaths: ./src
+    buildSteps:
+      - script: npm ci
+        displayName: npm ci
+
+      - script: npm run lint
+        displayName: Linting
+
+      - script: npm run format-check
+        displayName: Formatting
+
+      - script: npm run compile
+        displayName: Compile

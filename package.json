@@ -87,8 +87,8 @@
         "download-api": "dts dev",
         "lint": "eslint src",
         "lint-fix": "eslint --fix src",
-        "format": "prettier --write *.js *.json 'src/**/*.ts*'",
-        "format-check": "prettier --check *.js *.json 'src/**/*.ts*'",
+        "format": "prettier --write *.js *.json 'src/**/*.ts*' 'build/**/*.yml'",
+        "format-check": "prettier --check *.js *.json 'src/**/*.ts*' 'build/**/*.yml'",
         "postinstall": "npm run download-api",
         "worker": "esbuild ./src/execution/src/comlink.worker.ts --bundle --outfile=out/comlink.worker.js --sourcemap --format=esm --platform=node --target=es2018 --define:global=this",
         "kernel-watch": "esbuild ./src/execution/src/test.ts --bundle --outfile=out/test.js --sourcemap --format=cjs --platform=node --target=es2018 --watch"
