@@ -1,0 +1,21 @@
+{
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "explicit",
+        "source.fixAll.tslint": "explicit"
+    },
+    "[typescript]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[javascript]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "javascript.preferences.quoteStyle": "single",
+    "typescript.preferences.importModuleSpecifier": "relative",
+    "git.branchProtection": [
+        "main",
+        "release*"
+    ],
+    "git.branchProtectionPrompt": "alwaysCommitToNewBranch"
+}
