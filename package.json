@@ -27,6 +27,7 @@
         "chatProvider"
     ],
     "license": "MIT",
+    "main": "./out/extension.js",
     "contributes": {
         "chatParticipants": [
             {
@@ -84,7 +85,6 @@
             }
         ]
     },
-    "main": "./out/extension.js",
     "scripts": {
         "vscode:prepublish": "npm run compile",
         "compile": "npm run worker && npm run compile-extension",
