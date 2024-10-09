@@ -69,7 +69,7 @@ function getFormattedOutput(outputs: Record<string, any>[]) {
     const result: Record<string, string> = { 'text/plain': '' };
     outputs.forEach((output) => {
         if (output['text/plain']) {
-            result['text/plain'] = output['text/plain'];
+            result['text/plain'] = (result['text/plain'] || '') + output['text/plain'];
         }
         if (output['text/html']) {
             result['text/html'] = output['text/html'];
