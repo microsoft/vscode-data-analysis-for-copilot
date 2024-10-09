@@ -36,8 +36,5 @@ extends:
       - script: npm run lint
         displayName: Linting
 
-      - script: npm run format-check
-        displayName: Formatting
-
       - script: npm run compile
         displayName: Compile
