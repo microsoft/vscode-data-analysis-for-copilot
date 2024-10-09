@@ -1,15 +1,25 @@
 {
+    "editor.insertSpaces": false,
     "editor.codeActionsOnSave": {
         "source.fixAll.eslint": "explicit",
         "source.fixAll.tslint": "explicit"
     },
+    "files.trimTrailingWhitespace": true,
     "[typescript]": {
-        "editor.formatOnSave": true,
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
+      "editor.insertSpaces": false,
+      "editor.defaultFormatter": "vscode.typescript-language-features",
+      "editor.formatOnSave": true,
+      "editor.codeActionsOnSave": {
+        "source.organizeImports": "always"
+      }
     },
-    "[javascript]": {
-        "editor.formatOnSave": true,
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "[typescriptreact]": {
+      "editor.insertSpaces": false,
+      "editor.defaultFormatter": "vscode.typescript-language-features",
+      "editor.formatOnSave": true,
+      "editor.codeActionsOnSave": {
+        "source.organizeImports": "always"
+      }
     },
     "javascript.preferences.quoteStyle": "single",
     "typescript.preferences.importModuleSpecifier": "relative",
