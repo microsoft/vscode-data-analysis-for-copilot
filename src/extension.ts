@@ -11,8 +11,6 @@ const MODEL_SELECTOR: vscode.LanguageModelChatSelector = {
 
 // TODO: separate out, better execution failure
 
-const RunPythonToolId = 'ada-data_runPython';
-
 interface IToolCall {
     tool: vscode.LanguageModelToolDescription;
     call: vscode.LanguageModelChatResponseToolCallPart;
