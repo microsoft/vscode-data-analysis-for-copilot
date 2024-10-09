@@ -59,7 +59,8 @@ export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParamet
         _token: vscode.CancellationToken
     ) {
         const kernel = await this._kernelPromise;
-        const result = await execute(kernel, options.parameters.code);
+        const code = sanitizePythonCode(options.parameters.code);
+        const result = await execute(kernel, code);
 
         console.log(result);
         const resultData: { [key: string]: unknown } = {};
@@ -82,7 +83,30 @@ export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParamet
         _token: vscode.CancellationToken
     ) {
         return {
-            invocationMessage: `Evaluating \`\`\`${JSON.stringify(options.parameters.code)}\`\`\``
+            invocationMessage: `Evaluating \`\`\`${sanitizePythonCodeForDisplay(options.parameters.code)}\`\`\``
         };
     }
+}
+
+/**
+ * Sometimes the code can be a markdown code block, in which case we need to remove the code block.
+ */
+function sanitizePythonCode(code: string) {
+    if (code.startsWith('```python')) {
+        code = code.substring('```python'.length);
+    }
+    if (code.endsWith('```')) {
+        code = code.substring(0, code.length - '```'.length);
+    }
+    return code;
+}
+
+/**
+ * Sometimes the code can be a markdown code block, in which case we need to remove the code block.
+ */
+function sanitizePythonCodeForDisplay(code: string) {
+    return sanitizePythonCode(code)
+        .split(/\r?\n/)
+        .filter((line) => !line.trim().startsWith('#'))
+        .join('\n');
 }
