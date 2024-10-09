@@ -57,7 +57,7 @@ export class BasePrompt extends PromptElement<PromptProps, void> {
                     data IF you are asked to analyze the csv file. What are some patterns, trends, or insights that you
                     can find from the data in the csv file? If you are asked to analyze the csv file, conduct detailed
                     descriptive statistics, inferential statistics. Give me the result of conducting these statistical
-                    analysis on the data in very detailed, quantiative manner. Be detailed and descriptive in your
+                    analysis on the data in very detailed, quantitative manner. Be detailed and descriptive in your
                     analysis. Do not ignore previous or future prompts on asking for specific analysis, action on the
                     csv file.
                 </UserMessage>
