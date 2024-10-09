@@ -11,16 +11,7 @@ const MODEL_SELECTOR: vscode.LanguageModelChatSelector = {
 
 // TODO: separate out, better execution failure
 
-const llmChatMessageAssistantContent = `
-You are an expert Data Scientist and Python engineer.
-Make no assumptions about any data, instead gather the context and generate Python code and execute it to analyze the data and get the appropriate answer.
-When processing files, use the right tools to either find a file or download the contents of a file from the web or the like.
-You should always try to generate Python code to answer the user query and then execute it to get the result.
-You should always try to use available tools to get any information you need.
-You can call multiple tools repeatedly until you have all of the information to resolve to original query.
-
-Above all, you must always ensure the final response has been generated based as a result of executing the the generated Python code.
-`;
+const RunPythonToolId = 'ada-data_runPython';
 
 interface IToolCall {
     tool: vscode.LanguageModelToolDescription;
@@ -132,7 +123,7 @@ export function activate(context: vscode.ExtensionContext) {
             }
 
             if (toolCalls.length) {
-                const assistantMsg = vscode.LanguageModelChatMessage.Assistant(llmChatMessageAssistantContent);
+                const assistantMsg = vscode.LanguageModelChatMessage.Assistant('');
                 assistantMsg.content2 = toolCalls.map(
                     (toolCall) =>
                         new vscode.LanguageModelChatResponseToolCallPart(
