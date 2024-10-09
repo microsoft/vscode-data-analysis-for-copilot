@@ -91,7 +91,7 @@ export function activate(context: vscode.ExtensionContext) {
                         } catch (err) {
                             console.error(part.parameters);
                             if (part.parameters && typeof part.parameters === 'string') {
-                                part.parameters = { code: part.parameters };
+                                part.parameters = JSON.stringify({ code: part.parameters });
                             } else {
                                 throw new Error(
                                     `Got invalid tool use parameters: "${part.parameters}". (${(err as Error).message})`

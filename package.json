@@ -83,7 +83,7 @@
         "vscode:prepublish": "npm run compile",
         "compile": "npm run worker && npm run compile-extension",
         "compile-extension": "tsc -p ./",
-        "watch": "tsc -watch -p ./",
+        "watch": "concurrently \"npm run compile-extension\" \"npm run worker-watch\"",
         "download-api": "dts dev",
         "lint": "eslint src",
         "lint-fix": "eslint --fix src",
@@ -91,7 +91,7 @@
         "format-check": "prettier --check *.js *.json 'src/**/*.ts*' 'build/**/*.yml'",
         "postinstall": "npm run download-api",
         "worker": "esbuild ./src/execution/src/comlink.worker.ts --bundle --outfile=out/comlink.worker.js --sourcemap --format=esm --platform=node --target=es2018 --define:global=this",
-        "kernel-watch": "esbuild ./src/execution/src/test.ts --bundle --outfile=out/test.js --sourcemap --format=cjs --platform=node --target=es2018 --watch"
+        "worker-watch": "esbuild ./src/execution/src/comlink.worker.ts --bundle --outfile=out/comlink.worker.js --sourcemap --format=esm --platform=node --target=es2018 --define:global=this --watch"
     },
     "devDependencies": {
         "@eslint/js": "^9.12.0",
@@ -105,6 +105,7 @@
         "@typescript-eslint/parser": "^8.8.1",
         "@vscode/dts": "^0.4.0",
         "@vscode/prompt-tsx": "^0.2.11-alpha",
+        "concurrently": "^9.0.1",
         "esbuild": "^0.21.5",
         "eslint": "^9.12.0",
         "globals": "^15.10.0",
