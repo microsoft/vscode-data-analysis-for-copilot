@@ -48,27 +48,34 @@ export async function start_kernel(context: ExtensionContext) {
 }
 
 let executeCount = 0;
-export async function execute(kernel: any, code: string) {
+type TextOutputs = Partial<Record<'text/plain' | 'image/png' | 'text/html', string>>;
+type ErrorOutput = { 'application/vnd.code.notebook.error': Error };
+type ExecuteResult = TextOutputs & Partial<ErrorOutput>;
+
+export async function execute(kernel: any, code: string): Promise<ExecuteResult> {
     executeCount++;
     const header = { header: { msg_id: executeCount.toString() } };
     const result = await kernel.execute({ code }, header);
     if ('status' in result && result.status === 'error') {
-        const output: Record<string, any> = {
-            error: result
+        const error = new Error(result.evalue);
+        error.name = result.ename;
+        const { default: stripAnsi } = await import('strip-ansi');
+        error.stack = ((result.traceback as string[]) || []).map((l) => stripAnsi(l)).join('\n');
+        return {
+            'application/vnd.code.notebook.error': error
         };
-
-        return output;
     }
 
     return getFormattedOutput(result.outputs as Record<string, any>[]);
 }
 
-function getFormattedOutput(outputs: Record<string, any>[]) {
+function getFormattedOutput(outputs: Record<string, any>[]): TextOutputs {
     // iterate over the outputs array and pick an item where key = "text/plain"
     // return the value of that key
-    const result: Record<string, string> = { 'text/plain': '' };
+    const result: TextOutputs = {};
     outputs.forEach((output) => {
         if (output['text/plain']) {
+            // There could be multiple text/plain outputs, combine them.
             result['text/plain'] = (result['text/plain'] || '') + output['text/plain'];
         }
         if (output['text/html']) {
