@@ -91,7 +91,7 @@
         "compile-extension": "tsc -p ./",
         "watch-extension": "tsc -p ./ --watch",
         "watch": "concurrently \"npm run watch-extension\" \"npm run worker-watch\"",
-        "download-api": "dts dev",
+        "download-api": "dts main",
         "lint": "eslint src",
         "lint-fix": "eslint --fix src",
         "postinstall": "npm run download-api",
