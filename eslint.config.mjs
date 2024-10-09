@@ -3,7 +3,7 @@ import pluginJs from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
 export default [
-    { ignores: ['pyodide/**', 'src/execution/src/**'] },
+    // { ignores: ['pyodide/**', 'src/execution/src/**'] },
     { files: ['**/*.{js,mjs,cjs,ts}'] },
     { files: ['**/*.js'], languageOptions: { sourceType: 'script' } },
     { languageOptions: { globals: globals.browser } },
@@ -11,7 +11,8 @@ export default [
     ...tseslint.configs.recommended,
     {
         rules: {
-            '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '_\\w*' }]
+            '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '_\\w*' }],
+            '@typescript-eslint/no-explicit-any': 'off'
         }
     }
 ];

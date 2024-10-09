@@ -1,8 +1,7 @@
 {
-    "name": "data-analysis-chat-participant",
+    "name": "@vscode/pyodide",
     "publisher": "microsoft",
-    "displayName": "Data Analysis Chat Participant",
-    "description": "This tool extends the LLM's capabilities by allowing it to run Python code in a sandboxed Python environment (Pyodide) for a wide range of computational tasks and data manipulations that it cannot perform directly.",
+    "description": "Pyodide wrapper for use within VS Code",
     "author": "Microsoft Corporation",
     "homepage": "https://github.com/microsoft/Advanced-Data-Analysis-for-Copilot",
     "repository": {
@@ -27,111 +26,51 @@
         "chatProvider"
     ],
     "license": "MIT",
-    "main": "./out/extension.js",
-    "contributes": {
-        "chatParticipants": [
-            {
-                "id": "ada.data",
-                "fullName": "Advanced Data Analytics",
-                "name": "ada",
-                "description": "I can help you with data analytics",
-                "isSticky": true
-            }
-        ],
-        "languageModelTools": [
-            {
-                "id": "ada-data_findFiles",
-                "tags": [],
-                "displayName": "Find Files",
-                "modelDescription": "Search for files in the current workspace",
-                "parametersSchema": {
-                    "type": "object",
-                    "properties": {
-                        "pattern": {
-                            "type": "string",
-                            "description": "Search for files that match this glob pattern"
-                        }
-                    },
-                    "required": [
-                        "pattern"
-                    ]
-                },
-                "supportedContentTypes": [
-                    "text/plain"
-                ]
-            },
-            {
-                "id": "ada-data_runPython",
-                "tags": [],
-                "displayName": "Run Python",
-                "modelDescription": "Execute Python code locally using Pyodide, providing access to Python's extensive functionality. This tool extends the LLM's capabilities by allowing it to run Python code for a wide range of computational tasks and data manipulations that it cannot perform directly. When you know the workspace folder path and the file path, use the relative path to the file when generating code.",
-                "parametersSchema": {
-                    "type": "object",
-                    "properties": {
-                        "code": {
-                            "type": "string",
-                            "description": "The Python code to run"
-                        }
-                    },
-                    "required": [
-                        "code"
-                    ]
-                },
-                "supportedContentTypes": [
-                    "text/plain",
-                    "image/png",
-                    "application/vnd.code.notebook.error"
-                ]
-            }
-        ]
-    },
+    "main": "lib/index.js",
+    "types": "lib/index.d.ts",
     "scripts": {
-        "vscode:prepublish": "npm run compile",
-        "compile": "npm run worker && npm run compile-extension",
-        "compile-extension": "tsc -p ./",
-        "watch-extension": "tsc -p ./ --watch",
-        "watch": "concurrently \"npm run watch-extension\" \"npm run worker-watch\"",
-        "download-api": "dts dev",
-        "lint": "eslint src",
-        "lint-fix": "eslint --fix src",
-        "format": "prettier --write *.js *.json 'src/**/*.ts*' 'build/**/*.yml'",
-        "format-check": "prettier --check *.js *.json 'src/**/*.ts*' 'build/**/*.yml'",
-        "postinstall": "npm run download-api",
-        "worker": "esbuild ./src/execution/src/comlink.worker.ts --bundle --outfile=out/comlink.worker.js --sourcemap --format=esm --platform=node --target=es2018 --define:global=this",
-        "worker-watch": "esbuild ./src/execution/src/comlink.worker.ts --bundle --outfile=out/comlink.worker.js --sourcemap --format=esm --platform=node --target=es2018 --define:global=this --watch"
+        "postinstall": "npm run build:types && npx tsx build/build.ts",
+        "build": "npm run build:types && npm run compile:worker -- --minify && npm run compile:kernel -- --minify && npm run compile:kernelspecs -- --minify",
+        "compile": "npm run build:types && npm run compile:worker && npm run compile:kernel && npm run compile:kernelspecs",
+        "build:types": "tsc -p src --emitDeclarationOnly",
+        "compile:kernelspecs": "esbuild --bundle --sourcemap --target=node18 --platform=node --format=cjs  --external:mock-socket --external:@lumino/disposable --external:@lumino/messaging --external:@lumino/algorithm --external:@lumino/signaling --external:@jupyterlab/services --external:@lumino/signaling  --external:@jupyterlab/services/lib/kernel/serialize --external:@jupyterlab/services/lib/kernel/messages --external:@lumino/coreutils --external:@jupyterlab/coreutils --outfile=out/node/kernelspecs.js ./node_modules/@jupyterlite/kernel/lib/index.js",
+        "compile:kernel": "esbuild --bundle --sourcemap --target=node18 --platform=node --format=cjs  --external:mock-socket --external:@lumino/disposable --external:@lumino/messaging --external:@lumino/algorithm --external:@lumino/signaling --external:@jupyterlab/services --external:@lumino/signaling  --external:@jupyterlab/services/lib/kernel/serialize --external:@jupyterlab/services/lib/kernel/messages --external:@lumino/coreutils --external:@jupyterlab/coreutils --outfile=out/node/kernel.js src/node/kernel.ts",
+        "compile:worker": "esbuild --bundle --sourcemap --target=node18 --platform=node --format=cjs  --external:mock-socket--external:@jupyterlab/services --external:@jupyterlab/services --outfile=out/node/comlink.worker.js src/node/comlink.worker.ts",
+        "lint": "eslint src build",
+        "lint-fix": "eslint --fix src build",
+        "format": "prettier --write *.js *.json 'src/**/*.ts*' 'build/**/*.yml' 'build/**/*.ts'",
+        "format-check": "prettier --check *.js *.json 'src/**/*.ts*' 'build/**/*.yml' 'build/**/*.ts'"
     },
     "devDependencies": {
         "@eslint/js": "^9.12.0",
+        "@types/follow-redirects": "^1.14.4",
         "@types/json-schema": "^7.0.15",
         "@types/localforage": "^0.0.34",
         "@types/node": "^20.5.9",
         "@types/node-fetch": "^2.5.7",
-        "@types/vscode": "^1.74.0",
+        "@types/proxy-from-env": "^1.0.4",
         "@types/ws": "^8.5.10",
         "@typescript-eslint/eslint-plugin": "^8.8.1",
         "@typescript-eslint/parser": "^8.8.1",
-        "@vscode/dts": "^0.4.0",
-        "@vscode/prompt-tsx": "^0.2.11-alpha",
-        "concurrently": "^9.0.1",
         "esbuild": "^0.21.5",
         "eslint": "^9.12.0",
+        "follow-redirects": "^1.15.9",
         "globals": "^15.10.0",
+        "https-proxy-agent": "^7.0.5",
         "prettier": "^3.3.3",
-        "run-script-os": "^1.1.6",
+        "proxy-from-env": "^1.1.0",
+        "pyodide": "^0.26.2",
+        "tar": "^7.4.3",
+        "tsx": "^4.19.1",
         "typescript": "^5.6.3",
         "typescript-eslint": "^8.8.1"
     },
     "dependencies": {
-        "@jupyterlab/coreutils": "^6.2.2",
-        "@jupyterlab/services": "^7.2.2",
-        "@jupyterlite/contents": "^0.3.0",
-        "@jupyterlite/kernel": "^0.3.0",
+        "@jupyterlab/coreutils": "^6.2.5",
+        "@jupyterlab/services": "^7.2.5",
+        "@jupyterlite/contents": "^0.4.2",
+        "@jupyterlite/kernel": "^0.4.2",
         "@lumino/coreutils": "^2.1.2",
-        "@vscode/python-extension": "^1.0.5",
-        "csv-parser": "^3.0.0",
-        "localforage": "^1.10.0",
-        "node-fetch": "^2.6.7",
-        "pyodide": "0.23.4",
-        "strip-ansi": "^7.1.0"
+        "comlink": "^4.4.1"
     }
 }

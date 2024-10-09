@@ -1,0 +1,16 @@
+{
+    "extends": "../tsconfig.json",
+    "compilerOptions": {
+        "lib": [
+            "ES2019",
+            "DOM",
+            "DOM.Iterable"
+        ],
+        "resolveJsonModule": false,
+        "emitDeclarationOnly": true,
+        "composite": true,
+    },
+    "include": [
+        "**/*"
+    ]
+}

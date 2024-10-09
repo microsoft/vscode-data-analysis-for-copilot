@@ -1,19 +1,29 @@
 {
     "compilerOptions": {
-        "module": "Node16",
-        "target": "ES2022",
-        "lib": ["ES2022"],
-        "sourceMap": true,
-        "rootDir": "src",
-        "strict": true /* enable all strict type-checking options */,
-        "outDir": "out",
+        "allowSyntheticDefaultImports": true,
+        "composite": true,
+        // "declaration": true,
+        "esModuleInterop": true,
+        "incremental": true,
         "jsx": "react",
-        "jsxFactory": "vscpp",
-        "jsxFragmentFactory": "vscppf",
-        "skipLibCheck": true
-        /* Additional Checks */
-        // "noImplicitReturns": true, /* Report error when not all code paths in function return a value. */
-        // "noFallthroughCasesInSwitch": true, /* Report errors for fallthrough cases in switch statement. */
-        // "noUnusedParameters": true,  /* Report errors on unused parameters. */
-    }
+        "module": "CommonJS",
+        "moduleResolution": "node",
+        "emitDeclarationOnly": true,
+        "outDir": "out",
+        "baseUrl": ".",
+        "rootDir": "./src",
+        "noEmitOnError": true,
+        "noImplicitAny": true,
+        "noUnusedLocals": true,
+        "preserveWatchOutput": true,
+        "resolveJsonModule": true,
+        "skipLibCheck": true,
+        "strict": true,
+        "strictNullChecks": true,
+        "target": "ES2019",
+        "types": ["node"],
+        "typeRoots": ["./node_modules/@types"]
+    },
+    "include": ["src/**/*", "vscode.*"],
+    "exclude": ["./node_modules", "./out", "./dist", "./build"]
 }

@@ -401,3 +401,6 @@ FodyWeavers.xsd
 *.d.ts
 out/
 **/.DS_Store
+
+dist/
+vscode.proposed.*.d.ts
