@@ -98,6 +98,7 @@ export function activate(context: vscode.ExtensionContext) {
                         try {
                             parameters = JSON.parse(part.parameters);
                         } catch (err) {
+                            console.error(part.parameters);
                             throw new Error(`Got invalid tool use parameters: "${part.parameters}". (${(err as Error).message})`);
                         }
 

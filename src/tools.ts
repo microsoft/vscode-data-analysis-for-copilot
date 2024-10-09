@@ -90,7 +90,7 @@ export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParamet
 		token: vscode.CancellationToken
 	) {
 		return {
-			invocationMessage: `Evaluating \n---\n\`\`\`${JSON.stringify(options.parameters.code)}\`\`\``,
+			invocationMessage: `Evaluating \`\`\`${JSON.stringify(options.parameters.code)}\`\`\``,
 		};
 	}
 }
