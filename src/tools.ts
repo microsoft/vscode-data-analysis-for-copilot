@@ -13,8 +13,10 @@ export class FindFilesTool implements vscode.LanguageModelTool<IFindFilesParamet
         token: vscode.CancellationToken
     ) {
         const params = options.parameters as IFindFilesParameters;
-        const files = await vscode.workspace.findFiles(params.pattern, '**/node_modules/**', undefined, token);
-
+        let files = await vscode.workspace.findFiles(params.pattern, '**/node_modules/**', undefined, token);
+        if (files.length === 0) {
+            files = await vscode.workspace.findFiles(`**/${params.pattern}`, '**/node_modules/**', undefined, token);
+        }
         const result: vscode.LanguageModelToolResult = {};
         if (options.requestedContentTypes.includes('text/plain')) {
             const currentWorkspaceFolders = vscode.workspace.workspaceFolders;
