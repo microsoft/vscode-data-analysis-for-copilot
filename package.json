@@ -125,6 +125,7 @@
         "csv-parser": "^3.0.0",
         "localforage": "^1.10.0",
         "node-fetch": "^2.6.7",
-        "pyodide": "0.23.4"
+        "pyodide": "0.23.4",
+        "strip-ansi": "^7.1.0"
     }
 }
