@@ -13,7 +13,7 @@ const MODEL_SELECTOR: vscode.LanguageModelChatSelector = {
 
 interface IToolCall {
     tool: vscode.LanguageModelToolDescription;
-    call: vscode.LanguageModelChatResponseToolCallPart;
+    call: vscode.LanguageModelToolCallPart;
     result: Thenable<vscode.LanguageModelToolResult>;
 }
 
@@ -76,9 +76,9 @@ export function activate(context: vscode.ExtensionContext) {
 
             if (response.stream) {
                 for await (const part of response.stream) {
-                    if (part instanceof vscode.LanguageModelChatResponseTextPart) {
+                    if (part instanceof vscode.LanguageModelTextPart) {
                         stream.markdown(part.value);
-                    } else if (part instanceof vscode.LanguageModelChatResponseToolCallPart) {
+                    } else if (part instanceof vscode.LanguageModelToolCallPart) {
                         const tool = vscode.lm.tools.find((tool) => tool.id === part.name);
                         if (!tool) {
                             // BAD tool choice?
@@ -124,7 +124,7 @@ export function activate(context: vscode.ExtensionContext) {
                 const assistantMsg = vscode.LanguageModelChatMessage.Assistant('');
                 assistantMsg.content2 = toolCalls.map(
                     (toolCall) =>
-                        new vscode.LanguageModelChatResponseToolCallPart(
+                        new vscode.LanguageModelToolCallPart(
                             toolCall.tool.id,
                             toolCall.call.toolCallId,
                             toolCall.call.parameters
@@ -139,10 +139,7 @@ export function activate(context: vscode.ExtensionContext) {
                     if (toolResult['text/plain']) {
                         const message = vscode.LanguageModelChatMessage.User('');
                         message.content2 = [
-                            new vscode.LanguageModelChatMessageToolResultPart(
-                                toolCall.call.toolCallId,
-                                toolResult['text/plain']!
-                            )
+                            new vscode.LanguageModelToolResultPart(toolCall.call.toolCallId, toolResult['text/plain']!)
                         ];
                         messages.push(message);
                         toolResultInserted = true;
@@ -152,26 +149,24 @@ export function activate(context: vscode.ExtensionContext) {
                         const message = vscode.LanguageModelChatMessage.User('');
                         const markdownTextForImage = `![${toolCall.tool.id} result](data:image/png;base64,${toolResult['image/png']})`;
                         message.content2 = [
-                            new vscode.LanguageModelChatMessageToolResultPart(
-                                toolCall.call.toolCallId,
-                                markdownTextForImage
-                            )
+                            new vscode.LanguageModelToolResultPart(toolCall.call.toolCallId, markdownTextForImage)
                         ];
                         messages.push(message);
                         toolResultInserted = true;
                     }
 
                     if (toolResult['application/vnd.code.notebook.error']) {
-                        const message = vscode.LanguageModelChatMessage.User('');
-                        const error: Error = toolResult['application/vnd.code.notebook.error'];
-                        message.content2 = [
-                            new vscode.LanguageModelChatMessageToolResultPart(
-                                toolCall.call.toolCallId,
-                                `Error: ${error.message} (${error.name})\n${error.stack}`,
-                                true
-                            )
-                        ];
-                        messages.push(message);
+                        // const message = vscode.LanguageModelChatMessage.User('');
+                        // const error: Error = toolResult['application/vnd.code.notebook.error'];
+                        // message.content2 = [
+                        //     new vscode.LanguageModelToolResultPart(
+                        //     // new vscode.LanguageModelToolResultPart(
+                        //         toolCall.call.toolCallId,
+                        //         `Error: ${error.message} (${error.name})\n${error.stack}`,
+                        //         true
+                        //     )
+                        // ];
+                        // messages.push(message);
                         toolResultInserted = true;
                     }
 
