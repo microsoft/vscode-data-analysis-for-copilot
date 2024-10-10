@@ -410,3 +410,4 @@ tsconfig.tsbuildinfo
 temp/
 *.vsix
 *.zip
+!resources/pyodide.zip
