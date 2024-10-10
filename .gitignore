@@ -402,3 +402,5 @@ FodyWeavers.xsd
 out/
 dist/
 **/.DS_Store
+temp/
+pyodide/
