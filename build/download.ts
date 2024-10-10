@@ -43,13 +43,13 @@ type ReleaseInfo = {
 	}[];
 };
 export async function downloadPyodideScripts() {
-	spawnSync('git checkout origin/pyodide -- pyodide.zip', { cwd: path.join(__dirname, '..'), shell: true });
-	const tarFile = path.join(__dirname, '..', 'pyodide.zip');
+	spawnSync('git checkout origin/pyodide -- resources/pyodide.zip', { cwd: path.join(__dirname, '..'), shell: true });
+	const tarFile = path.join(__dirname, '..', 'resources', 'pyodide.zip');
 	const dir = path.join(__dirname, '..', 'pyodide');
 	if (!fs.existsSync(dir)) {
 		fs.mkdirSync(dir);
 	}
-	await extractFile(tarFile, path.join(__dirname, '..'));
+	await extractFile(tarFile, path.join(__dirname, '..', 'pyodide'));
 	console.debug(`Extracted to ${dir}`);
 }
 
@@ -218,6 +218,10 @@ async function extractFile(tgzFile: string, extractDir: string) {
 }
 
 async function main() {
+	const pyodideDir = path.join(__dirname, '..', 'pyodide');
+	if (fs.existsSync(pyodideDir)) {
+		fs.rmSync(pyodideDir, { recursive: true });
+	}
 	await downloadPyodideScripts();
 	await downloadPyodideArtifacts();
 }
