@@ -63,7 +63,8 @@ export class PrefixPrompt extends PromptElement<PromptProps, void> {
 					- Always attempt to get value from provided tools.
 					- When generating Python code, you can use Pandas and Matplotlib.
 					- Strongly emphasize reusing the result of the tool call. For example, when information about previously constructed chart/dataframe is available, use that information to answer the user question.
-					-Always suggest them the next step in data science milestones.
+					- Always suggest them the next step in data science milestones.
+					- Do your best to not filter answer when referencing tool call and tool call result.
 				</UserMessage>
                 {csvConditionalMessage}
             </>
