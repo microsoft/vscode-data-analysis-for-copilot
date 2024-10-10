@@ -31,7 +31,9 @@ export class PyodideRemoteKernel {
         globalThis.fetch = async (input: string | URL | Request, init?: RequestInit) => {
             console.log(`xxFetch ${JSON.stringify(input)} with ${JSON.stringify(init)}`);
             if (typeof input === 'string' && input.endsWith('/pypi/all.json')) {
-                const contents = fs.readFileSync('/Users/donjayamanne/Downloads/package6.1/pypi/all.json');
+                const separator = options.baseUrl.includes('/') ? '/' : '\\';
+                const endsWithSeparator = options.baseUrl.endsWith('/') || options.baseUrl.endsWith('\\');
+                const contents = fs.readFileSync(`${options.baseUrl}${endsWithSeparator ? '' : separator}pypi${separator}all.json`);
                 return new Response(contents, { status: 200, statusText: 'OK' });
             }
             return originalFetch(input, init);
