@@ -1,24 +1,34 @@
 // Copyright (c) Jupyter Development Team.
 // Distributed under the terms of the Modified BSD License.
 
-// const { Worker: NodeWorker } = require("worker_threads");
-import { Uri, workspace, type ExtensionContext } from 'vscode';
-import type { PyodideKernel } from '../../pyodide/node/kernel';
 import { KernelMessage } from '@jupyterlab/services';
 import type { IExecuteRequestMsg } from '@jupyterlab/services/lib/kernel/messages';
+import { Uri, workspace, type EventEmitter, type ExtensionContext } from 'vscode';
+import type { PyodideKernel } from '../../pyodide/node/kernel';
 import { createDeferred, type Deferred } from './async';
+import * as path from 'path';
 
-// 1. cd vscode-jupyter/src/kernels/lite/pyodide-kernel
-// python -m http.server 9000
-// 2. cd src/kernels/lite/pyodide-kernel/src/pyodide
-// python -m http.server 8016
-// 3. npm run worker-watch
-// 4. npm run compile
-// node ....test.js
+export class MessageHandler {
+	private readonly messages = new Map<string, Deferred<KernelMessage.IMessage>>();
+	constructor() {
 
-export async function start_kernel(context: ExtensionContext) {
-	debugger;
-	const kernelPath = '../../pyodide/node/kernel';
+	}
+	public getResponse(id: string) {
+		return this.getMessageHandler(id).promise;
+	}
+	public getMessageHandler(id: string) {
+		if (!this.messages.has(id)) {
+			this.messages.set(id, createDeferred<KernelMessage.IMessage>());
+		}
+		return this.messages.get(id)!;
+	}
+	handleResponse(msg: KernelMessage.IMessage) {
+		this.getMessageHandler(msg.parent_header.msg_id).resolve(msg);
+	}
+}
+export async function start_kernel(context: ExtensionContext, messageHandler: EventEmitter<KernelMessage.IMessage>) {
+	// We do not want this bundled by eslint, hence construct a dynamic path.
+	const kernelPath = path.join(context.extensionUri.fsPath, 'pyodide', 'node', 'kernel');
 	// eslint-disable-next-line @typescript-eslint/no-require-imports
 	const { PyodideKernel } = require(kernelPath) as typeof import('../../pyodide/node/kernel');
 	const kernel = new PyodideKernel({
@@ -44,6 +54,7 @@ export async function start_kernel(context: ExtensionContext) {
 		packagePath: Uri.joinPath(context.extensionUri, 'pyodide').fsPath,
 		sendMessage: (msg) => {
 			console.log('Sending message', msg);
+			messageHandler.fire(msg)
 		}
 	});
 	await kernel.ready;
@@ -52,13 +63,11 @@ export async function start_kernel(context: ExtensionContext) {
 	return kernel;
 }
 
-let executeCount = 0;
 type TextOutputs = Partial<Record<'text/plain' | 'image/png' | 'text/html', string>>;
 type ErrorOutput = { 'application/vnd.code.notebook.error': Error };
 type ExecuteResult = TextOutputs & Partial<ErrorOutput>;
 
-export async function execute(kernel: PyodideKernel, code: string): Promise<ExecuteResult> {
-	executeCount++;
+export async function execute(kernel: PyodideKernel, messageHandler: EventEmitter<KernelMessage.IMessage>, code: string): Promise<ExecuteResult> {
 	const request = KernelMessage.createMessage<IExecuteRequestMsg>({
 		channel: 'shell',
 		content: { code, allow_stdin: false, store_history: true },
@@ -67,23 +76,46 @@ export async function execute(kernel: PyodideKernel, code: string): Promise<Exec
 		msgId: new Date().toISOString()
 	});
 
-
-	const result = await kernel.remoteKernel.execute(request.content, request);
-	if ('status' in result && result.status === 'error') {
-		const error = new Error(result.evalue);
-		error.name = result.ename;
-		const { default: stripAnsi } = await import('strip-ansi');
-		error.stack = ((result.traceback as string[]) || []).map((l) => stripAnsi(l)).join('\n');
-		return {
-			'application/vnd.code.notebook.error': error
-		};
+	const outputs: Record<string, string>[] = [];
+	const executeResultReceived = createDeferred<void>();
+	const disposable = messageHandler.event((msg) => {
+		if (KernelMessage.isExecuteResultMsg(msg)) {
+			if (msg.content.data && Object.keys(msg.content.data).length) {
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				outputs.push(msg.content.data as any);
+			}
+			executeResultReceived.resolve();
+		}
+		if (KernelMessage.isDisplayDataMsg(msg)) {
+			if (msg.content.data && Object.keys(msg.content.data).length) {
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				outputs.push(msg.content.data as any);
+			}
+		}
+		if (KernelMessage.isStreamMsg(msg)) {
+			outputs.push({ 'text/plain': msg.content.text });
+		}
+	});
+	try {
+		const result = await kernel.remoteKernel.execute(request.content, request);
+		if ('status' in result && result.status === 'error') {
+			const error = new Error(result.evalue);
+			error.name = result.ename;
+			const { default: stripAnsi } = await import('strip-ansi');
+			error.stack = ((result.traceback as string[]) || []).map((l) => stripAnsi(l)).join('\n');
+			return {
+				'application/vnd.code.notebook.error': error
+			};
+		}
+		await executeResultReceived.promise;
+		return getFormattedOutput(outputs);
+	} finally {
+		disposable.dispose();
 	}
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	return getFormattedOutput((result as any).outputs as Record<string, any>[]);
 
 }
 
-function getFormattedOutput(outputs: Record<string, any>[]): TextOutputs {
+function getFormattedOutput(outputs: Record<string, string>[]): TextOutputs {
 	// iterate over the outputs array and pick an item where key = "text/plain"
 	// return the value of that key
 	const result: TextOutputs = {};

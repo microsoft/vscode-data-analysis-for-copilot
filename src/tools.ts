@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import type { PyodideKernel } from '../pyodide/node/kernel';
 import { execute, start_kernel } from './execution';
+import { KernelMessage } from '@jupyterlab/services';
 
 interface IFindFilesParameters {
 	pattern: string;
@@ -51,8 +52,9 @@ interface IRunPythonParameters {
 
 export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParameters> {
 	private _kernelPromise: Promise<PyodideKernel>;
+	private readonly messageEmitter = new vscode.EventEmitter<KernelMessage.IMessage>();
 	constructor(context: vscode.ExtensionContext) {
-		this._kernelPromise = start_kernel(context);
+		this._kernelPromise = start_kernel(context, this.messageEmitter);
 	}
 
 	async invoke(
@@ -61,7 +63,7 @@ export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParamet
 	) {
 		const kernel = await this._kernelPromise;
 		const code = sanitizePythonCode(options.parameters.code);
-		const result = await execute(kernel, code);
+		const result = await execute(kernel, this.messageEmitter, code);
 
 		console.log(result);
 		const resultData: { [key: string]: unknown } = {};
