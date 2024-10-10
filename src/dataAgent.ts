@@ -79,6 +79,8 @@ export class DataAgent implements vscode.Disposable {
 		const cacheMessagesForCurrentRun: vscode.LanguageModelChatMessage[] = [];
 
 		const toolReferences = [...request.toolReferences];
+		let errorCount = 0;
+
 		const runWithFunctions = async (): Promise<void> => {
 			const requestedTool = toolReferences.shift();
 			if (requestedTool) {
@@ -94,7 +96,6 @@ export class DataAgent implements vscode.Disposable {
 
 			// Loop through the messages, check if there are 3 or greater # of tool call error -
 			// Tell Language Model to just present the code to user without further tool call
-			let errorCount = 0;
 			for (const msg of messages) {
 				if (msg && msg instanceof vscode.LanguageModelChatMessage) {
 					if (msg.content2 && msg.content2[0] && msg.content2[0] instanceof vscode.LanguageModelToolResultPart && msg.content2[0].content) {
