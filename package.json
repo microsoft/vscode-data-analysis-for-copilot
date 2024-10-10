@@ -86,9 +86,8 @@
         ]
     },
     "scripts": {
-        "vscode:prepublish": "npm run compile",
-        "prepublish": "npm run compile-extension -- --minify && npm run worker -- --minify",
-        "compile": "npm run compile-extension",
+        "vscode:prepublish": "npm run compile-extension -- --minify && npm run compile-worker -- --minify",
+        "compile": "npm run compile-extension && npm run compile-worker",
         "compile-extension": "esbuild ./src/extension.ts --bundle --external:vscode --outfile=out/extension.js --sourcemap --format=cjs --platform=node --target=node18",
         "watch-extension": "npm run compile-extension -- --watch",
         "watch": "concurrently \"npm run watch-extension\" \"npm run worker-watch\"",
@@ -96,8 +95,8 @@
         "lint": "eslint src",
         "lint-fix": "eslint --fix src",
         "postinstall": "npm run download-api",
-        "worker": "esbuild ./pyodide/node/comlink.worker.js --bundle --outfile=out/node/comlink.worker.js --sourcemap --format=esm --platform=node --target=es2018 --define:global=this",
-        "worker-watch": "npm run worker -- --watch"
+        "compile-worker": "esbuild ./pyodide/node/comlink.worker.js --bundle --outfile=out/node/comlink.worker.js --sourcemap --format=cjs --platform=node --target=node18",
+        "watch-worker": "npm run worker -- --watch"
     },
     "devDependencies": {
         "@eslint/js": "^9.12.0",

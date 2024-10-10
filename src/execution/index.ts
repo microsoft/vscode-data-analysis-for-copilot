@@ -46,15 +46,13 @@ export async function start_kernel(context: ExtensionContext, messageHandler: Ev
 			packages: []
 		},
 		name: 'pyodide',
-		packagePath: Uri.joinPath(context.extensionUri, 'out').fsPath,
+		packagePath: Uri.joinPath(context.extensionUri, 'out', 'node', 'comlink.worker.js').fsPath,
 		sendMessage: (msg) => {
 			console.log('Sending message', msg);
 			messageHandler.fire(msg)
 		}
 	});
 	await kernel.ready;
-	const info = await kernel.kernelInfoRequest();
-	console.log(info);
 	return kernel;
 }
 

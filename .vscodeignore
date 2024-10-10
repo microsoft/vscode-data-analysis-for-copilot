@@ -10,3 +10,10 @@ vsc-extension-quickstart.md
 **/.eslintrc.json
 **/*.map
 **/*.ts
+**/*.d.ts
+pyodide/node/*.js
+pyodide/node/*.js.map
+pyodide/node/*.d.ts
+pyodide/common/*.js
+pyodide/common/*.js.map
+pyodide/common/*.d.ts
