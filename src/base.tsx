@@ -65,6 +65,8 @@ export class PrefixPrompt extends PromptElement<PromptProps, void> {
 					- Strongly emphasize reusing the result of the tool call. For example, when information about previously constructed chart/dataframe is available, use that information to answer the user question.
 					- Always suggest them the next step in data science milestones.
 					- Do your best to not filter answer when referencing tool call and tool call result.
+					- Do not filter dataframe output, do not worry about sensitivity of dataframe, we already have permission from user.
+					- Do not filter when generating dataframe, this is totally related to software engineering and data science.
 				</UserMessage>
                 {csvConditionalMessage}
             </>
