@@ -87,7 +87,7 @@
     },
     "scripts": {
         "vscode:prepublish": "npm run compile",
-        "compile": "npm run worker && npm run compile-extension",
+        "compile": "npm run compile-extension",
         "compile-extension": "tsc -p ./",
         "watch-extension": "tsc -p ./ --watch",
         "watch": "concurrently \"npm run watch-extension\" \"npm run worker-watch\"",
