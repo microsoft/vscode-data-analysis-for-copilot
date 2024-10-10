@@ -5,6 +5,11 @@ This tool extends the LLM's capabilities by allowing it to run Python code for a
 The Python code is executed locally in [Pyodide](https://pyodide.org/en/stable/).
 
 
+## Build
+- `npm i`
+- `npm run build`
+- Ensure the file `resources/pyodide.zip` is updated and committed to the repository.
+
 ## Contributing
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
