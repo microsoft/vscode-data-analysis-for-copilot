@@ -11,10 +11,7 @@ import type { IPyodideWorkerKernel } from './tokens';
 import { SyncMessaging } from './syncMessagingWorker';
 import * as fs from 'fs';
 
-// (globalThis as any).fetch = (url: any, a: any) => {
-//   debugger;
-//   console.log(url, a);
-// };
+
 export class PyodideRemoteKernel {
     constructor(private readonly syncMessaging: SyncMessaging) {
         this._initialized = new Promise((resolve, reject) => {

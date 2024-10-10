@@ -365,6 +365,6 @@ export namespace PyodideKernel {
         /**
          * Path to the worker script file to be loaded in the worker.
          */
-        packagePath: string;
+        workerPath: string;
     }
 }

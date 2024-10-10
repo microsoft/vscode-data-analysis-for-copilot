@@ -26,6 +26,6 @@ export class PyodideKernel extends BasePyodideKernel {
      * webpack to find it.
      */
     protected override initWorker(options: PyodideKernelTypes.IOptions): Worker {
-        return new Worker(options.packagePath, {});
+        return new Worker(options.workerPath, {});
     }
 }

@@ -408,3 +408,5 @@ dist/
 vscode.proposed.*.d.ts
 tsconfig.tsbuildinfo
 temp/
+*.vsix
+*.zip

@@ -12,6 +12,7 @@ import nodeEndpoint from 'comlink/dist/umd/node-adapter';
 import { parentPort } from 'worker_threads';
 import { SyncMessaging } from '../common/syncMessagingWorker';
 
+
 export class PyodideComlinkKernel extends PyodideRemoteKernel {
     /**
      * Setup custom Emscripten FileSystem
