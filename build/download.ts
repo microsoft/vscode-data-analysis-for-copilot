@@ -12,7 +12,7 @@ import { HttpsProxyAgent } from 'https-proxy-agent';
 import { PYODIDE_VERSION } from './common';
 
 function getApiUrl() {
-	return `https://github.com/microsoft/Advanced-Data-Analysis-for-Copilot/releases/tag/${PYODIDE_VERSION}`;
+	return `https://api.github.com/repos/microsoft/Advanced-Data-Analysis-for-Copilot/releases/tags/${PYODIDE_VERSION}`;
 }
 
 type ReleaseInfo = {
@@ -24,11 +24,11 @@ type ReleaseInfo = {
 		size: number;
 	}[];
 };
-export async function downloadPyodideKernel() {
+export async function downloadPyodideScripts() {
 	const contents = await downloadContents(getApiUrl());
 	const json: ReleaseInfo = JSON.parse(contents);
 	const fileToDownload = json.assets.find((asset) =>
-		asset.name.toLowerCase().startsWith('jupyterlite-pyodide-kernel-0')
+		asset.name.toLowerCase().startsWith('pyodide.zip')
 	)!;
 	console.debug(`Download ${fileToDownload.url}`);
 	const tarFile = path.join(tmpdir(), fileToDownload.name);
@@ -120,6 +120,7 @@ function downloadFile(url: string, dest: string) {
 	});
 }
 
+
 async function extractFile(tgzFile: string, extractDir: string) {
 	await tar.x({
 		file: tgzFile,
@@ -129,3 +130,5 @@ async function extractFile(tgzFile: string, extractDir: string) {
 
 	return extractDir;
 }
+
+downloadPyodideScripts();

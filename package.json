@@ -95,6 +95,7 @@
         "lint": "eslint src",
         "lint-fix": "eslint --fix src",
         "postinstall": "npm run download-api",
+        "downloadPyodide": "npx tsx build/download.ts",
         "compile-worker": "esbuild ./pyodide/node/comlink.worker.js --bundle --outfile=out/node/comlink.worker.js --sourcemap --format=cjs --platform=node --target=node18",
         "watch-worker": "npm run worker -- --watch"
     },
@@ -119,6 +120,8 @@
         "https-proxy-agent": "^7.0.5",
         "proxy-from-env": "^1.1.0",
         "run-script-os": "^1.1.6",
+        "tar": "^7.4.3",
+        "tsx": "^4.19.1",
         "typescript": "^5.6.3",
         "typescript-eslint": "^8.8.1"
     },
