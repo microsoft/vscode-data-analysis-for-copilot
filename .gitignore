@@ -406,4 +406,4 @@ dist/
 temp/
 pyodide/
 # This is from the `pyodide` branch, we do not want to commit this folder.
-resources/*
+resources/
