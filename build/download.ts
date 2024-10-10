@@ -11,6 +11,7 @@ import * as tar from 'tar';
 import { parse } from 'url';
 import { PYODIDE_VERSION } from './common';
 import * as unzipper from 'unzipper';
+import { spawnSync } from 'child_process';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const decompress = require('decompress');
@@ -42,22 +43,13 @@ type ReleaseInfo = {
 	}[];
 };
 export async function downloadPyodideScripts() {
-	// const contents = await downloadContents(getApiUrl());
-	// const json: ReleaseInfo = JSON.parse(contents);
-	// const fileToDownload = json.assets.find((asset) =>
-	// 	asset.name.toLowerCase().startsWith('pyodide.zip')
-	// )!;
-	// console.debug(`Downloading ${fileToDownload.name} (${fileToDownload.url})`);
-	// const tarFile = path.join(tmpdir(), fileToDownload.name);
-	// await downloadFile(fileToDownload.url, tarFile);
-	// console.debug(`Downloaded to ${tarFile}`);
+	spawnSync('git checkout origin/pyodide -- pyodide.zip', { cwd: path.join(__dirname, '..'), shell: true });
 	const tarFile = path.join(__dirname, '..', 'pyodide.zip');
 	const dir = path.join(__dirname, '..', 'pyodide');
 	if (!fs.existsSync(dir)) {
 		fs.mkdirSync(dir);
 	}
 	await extractFile(tarFile, path.join(__dirname, '..'));
-	// await deleteUnwantedFiles(dir);
 	console.debug(`Extracted to ${dir}`);
 }
 
