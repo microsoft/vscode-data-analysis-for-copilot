@@ -4,9 +4,8 @@
 import { KernelMessage } from '@jupyterlab/services';
 import type { IExecuteRequestMsg } from '@jupyterlab/services/lib/kernel/messages';
 import { Uri, workspace, type EventEmitter, type ExtensionContext } from 'vscode';
-import type { PyodideKernel } from '../../pyodide/node/kernel';
-import { createDeferred, type Deferred } from './async';
-import * as path from 'path';
+import { PyodideKernel } from '../../pyodide/node/kernel';
+import { createDeferred, type Deferred } from '../platform/common/async';
 
 export class MessageHandler {
 	private readonly messages = new Map<string, Deferred<KernelMessage.IMessage>>();
@@ -27,10 +26,6 @@ export class MessageHandler {
 	}
 }
 export async function start_kernel(context: ExtensionContext, messageHandler: EventEmitter<KernelMessage.IMessage>) {
-	// We do not want this bundled by eslint, hence construct a dynamic path.
-	const kernelPath = path.join(context.extensionUri.fsPath, 'pyodide', 'node', 'kernel');
-	// eslint-disable-next-line @typescript-eslint/no-require-imports
-	const { PyodideKernel } = require(kernelPath) as typeof import('../../pyodide/node/kernel');
 	const kernel = new PyodideKernel({
 		baseUrl: Uri.joinPath(context.extensionUri, 'pyodide').fsPath,
 		pyodideUrl: Uri.joinPath(context.extensionUri, 'pyodide', 'pyodide.js').fsPath,
@@ -51,7 +46,7 @@ export async function start_kernel(context: ExtensionContext, messageHandler: Ev
 			packages: []
 		},
 		name: 'pyodide',
-		packagePath: Uri.joinPath(context.extensionUri, 'pyodide').fsPath,
+		packagePath: Uri.joinPath(context.extensionUri, 'out').fsPath,
 		sendMessage: (msg) => {
 			console.log('Sending message', msg);
 			messageHandler.fire(msg)
