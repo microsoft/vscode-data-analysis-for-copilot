@@ -17,3 +17,4 @@ pyodide/node/*.d.ts
 pyodide/common/*.js
 pyodide/common/*.js.map
 pyodide/common/*.d.ts
+pyodide/*.map
