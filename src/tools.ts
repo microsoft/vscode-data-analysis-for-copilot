@@ -83,7 +83,7 @@ export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParamet
 		_token: vscode.CancellationToken
 	) {
 		return {
-			invocationMessage: `Evaluating`
+			invocationMessage: `Executing Python Code`
 		};
 	}
 }
