@@ -43,6 +43,7 @@ type ReleaseInfo = {
 	}[];
 };
 export async function downloadPyodideScripts() {
+	// `git checkout` will stage the changes, we don't want that. Hence use `git restore`
 	spawnSync('git restore --source=pyodide --worktree resources/pyodide.zip', { cwd: path.join(__dirname, '..'), shell: true });
 	const tarFile = path.join(__dirname, '..', 'resources', 'pyodide.zip');
 	const dir = path.join(__dirname, '..', 'pyodide');
