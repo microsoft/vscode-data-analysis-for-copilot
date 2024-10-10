@@ -11,7 +11,7 @@ import type { IWorkerKernel } from '@jupyterlite/kernel';
 /**
  * The schema for a Warehouse-like index, as used by piplite.
  */
-export * as PIPLITE_INDEX_SCHEMA from '../schema/piplite.v0.schema.json';
+// export * as PIPLITE_INDEX_SCHEMA from '../schema/piplite.v0.schema.json';
 
 /**
  * An interface for Pyodide workers.

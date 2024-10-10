@@ -27,6 +27,6 @@ export class PyodideKernel extends BasePyodideKernel {
      * webpack to find it.
      */
     protected override initWorker(options: PyodideKernelTypes.IOptions): Worker {
-        return new Worker(path.join(options.packagePath, 'lib', 'node', 'comlink.worker.js'), {});
+        return new Worker(path.join(options.packagePath, 'node', 'comlink.worker.js'), {});
     }
 }

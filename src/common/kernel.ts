@@ -5,7 +5,7 @@ import { Remote, proxy, wrap } from 'comlink';
 import nodeEndpoint from 'comlink/dist/umd/node-adapter';
 import { PromiseDelegate } from '@lumino/coreutils';
 import { PageConfig } from '@jupyterlab/coreutils';
-import { Contents, KernelMessage } from '@jupyterlab/services';
+import { KernelMessage } from '@jupyterlab/services';
 import { BaseKernel, IKernel } from '@jupyterlite/kernel';
 import { IPyodideWorkerKernel, IRemotePyodideWorkerKernel } from './tokens';
 import { pipliteWheelUrl } from './_pypi';
@@ -17,6 +17,9 @@ import type { IWorker } from './types';
  */
 export abstract class BasePyodideKernel extends BaseKernel implements IKernel {
     private readonly syncMessaging: SyncMessaging;
+    public get remoteKernel() {
+        return this._remoteKernel;
+    }
     /**
      * Instantiate a new PyodideKernel
      *
@@ -312,6 +315,16 @@ export namespace PyodideKernel {
      */
     export interface IOptions extends IKernel.IOptions {
         /**
+         * The base URL of the kernel server.
+         */
+        baseUrl: string;
+
+        /**
+         * The URL of a pyodide index file in the standard pyodide layout.
+         */
+        indexUrl: string;
+
+        /**
          * The URL to fetch Pyodide.
          */
         pyodideUrl: string;
@@ -345,10 +358,10 @@ export namespace PyodideKernel {
             packages: string[];
         };
 
-        /**
-         * The Jupyterlite content manager
-         */
-        contentsManager: Contents.IManager;
+        // /**
+        //  * The Jupyterlite content manager
+        //  */
+        // contentsManager: Contents.IManager;
 
         /**
          * Directory containing the Pyodide package
