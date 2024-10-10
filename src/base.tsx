@@ -31,17 +31,14 @@ export class PrefixPrompt extends PromptElement<PromptProps, void> {
 		if (csvFlag) {
 			csvConditionalMessage = (
 				<UserMessage>
-					Think of yourself as a data scientist who is analyzing a csv file using Python programming language.
-					Ask user to clean up their missing data value and ask them for updated csv file. Provide them with
-					code to remove the missing data value to remain interactive. Make sure to generate a pandas
-					dataframe using the given csv file before performing data analysis. Make sure to perform statistical
-					analysis on the data with actual numbers. Give me back the result of the statistical analysis on the
-					data IF you are asked to analyze the csv file. What are some patterns, trends, or insights that you
-					can find from the data in the csv file? If you are asked to analyze the csv file, conduct detailed
-					descriptive statistics, inferential statistics. Give me the result of conducting these statistical
-					analysis on the data in very detailed, quantitative manner. Be detailed and descriptive in your
-					analysis. Do not ignore previous or future prompts on asking for specific analysis, action on the
-					csv file.
+					- Think of yourself as a data scientist who is analyzing a csv file using Python programming language.
+					- Make sure to generate a pandas dataframe using the given csv file before performing data analysis.
+					- Make sure to perform statistical analysis on the data with actual numbers.
+					- Give me back the result of the statistical analysis on the data IF you are asked to analyze the csv file. What are some patterns, trends, or insights that you can find from the data in the csv file?
+					- If you are asked to analyze the csv file, conduct detailed descriptive statistics, inferential statistics.
+					- Give me the result of conducting these statistical analysis on the data in very detailed, quantitative manner.
+					- Be detailed and descriptive in your analysis.
+					- Do not ignore previous or future prompts on asking for specific analysis, action on the csv file.
 				</UserMessage>
 			);
 		}
