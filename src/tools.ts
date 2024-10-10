@@ -79,11 +79,11 @@ export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParamet
 	}
 
 	async prepareToolInvocation(
-		options: vscode.LanguageModelToolInvocationPrepareOptions<IRunPythonParameters>,
+		_options: vscode.LanguageModelToolInvocationPrepareOptions<IRunPythonParameters>,
 		_token: vscode.CancellationToken
 	) {
 		return {
-			invocationMessage: `Evaluating \`\`\`${sanitizePythonCodeForDisplay(options.parameters.code)}\`\`\``
+			invocationMessage: `Evaluating`
 		};
 	}
 }
@@ -101,12 +101,3 @@ function sanitizePythonCode(code: string) {
 	return code;
 }
 
-/**
- * Sometimes the code can be a markdown code block, in which case we need to remove the code block.
- */
-function sanitizePythonCodeForDisplay(code: string) {
-	return sanitizePythonCode(code)
-		.split(/\r?\n/)
-		.filter((line) => !line.trim().startsWith('#'))
-		.join('\n');
-}
