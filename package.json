@@ -109,7 +109,7 @@
         "@typescript-eslint/eslint-plugin": "^8.8.1",
         "@typescript-eslint/parser": "^8.8.1",
         "@vscode/dts": "^0.4.0",
-        "@vscode/prompt-tsx": "^0.2.11-alpha",
+        "@vscode/prompt-tsx": "^0.3.0-alpha.1",
         "concurrently": "^9.0.1",
         "esbuild": "^0.21.5",
         "eslint": "^9.12.0",

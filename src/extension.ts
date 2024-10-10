@@ -1,6 +1,6 @@
 import { renderPrompt } from '@vscode/prompt-tsx';
 import * as vscode from 'vscode';
-import { BasePrompt } from './base';
+import { PrefixPrompt, renderPromptWithHistory, UserRequestPrompt } from './base';
 import { FindFilesTool, RunPythonTool } from './tools';
 const DATA_AGENT_PARTICIPANT_ID = 'ada.data';
 
@@ -18,8 +18,9 @@ interface IToolCall {
 }
 
 export function activate(context: vscode.ExtensionContext) {
+	const pythonTool = new RunPythonTool(context);
 	context.subscriptions.push(vscode.lm.registerTool('ada-data_findFiles', new FindFilesTool(context)));
-	context.subscriptions.push(vscode.lm.registerTool('ada-data_runPython', new RunPythonTool(context)));
+	context.subscriptions.push(vscode.lm.registerTool('ada-data_runPython', pythonTool));
 
 	const dataAgentHandler: vscode.ChatRequestHandler = async (
 		request: vscode.ChatRequest,
@@ -50,15 +51,30 @@ export function activate(context: vscode.ExtensionContext) {
 			justification: 'Just because!'
 		};
 
-		const renderedPrompt = await renderPrompt(
-			BasePrompt,
+		const prefixPrompt = await renderPrompt(
+			PrefixPrompt,
 			{ userQuery: request.prompt, references: request.references, history: context.history },
 			{ modelMaxPromptTokens: chat.maxInputTokens },
 			chat
 		);
 
-		const messages: vscode.LanguageModelChatMessage[] =
-			renderedPrompt.messages as vscode.LanguageModelChatMessage[];
+        const historyMessages = renderPromptWithHistory(request.prompt, request.references, context);
+
+        const userRequestPrompt = await renderPrompt(
+			UserRequestPrompt,
+			{ userQuery: request.prompt, references: request.references, history: context.history },
+			{ modelMaxPromptTokens: chat.maxInputTokens },
+			chat
+		);
+
+		const messages: vscode.LanguageModelChatMessage[] = [
+            ...(prefixPrompt.messages as vscode.LanguageModelChatMessage[]),
+            ...(historyMessages as vscode.LanguageModelChatMessage[]),
+            ...(userRequestPrompt.messages as vscode.LanguageModelChatMessage[])
+        ];
+
+		const cacheMessagesForCurrentRun: vscode.LanguageModelChatMessage[] = [];
+
 		const toolReferences = [...request.toolReferences];
 		const runWithFunctions = async (): Promise<void> => {
 			const requestedTool = toolReferences.shift();
@@ -131,8 +147,9 @@ export function activate(context: vscode.ExtensionContext) {
 						)
 				);
 				messages.push(assistantMsg);
+				cacheMessagesForCurrentRun.push(assistantMsg);
 				for (const toolCall of toolCalls) {
-					// NOTE that the result of calling a function is a special content type of a USER-message
+					// NOTE that the result of calling a function is a special content type of a USER-messag
 					const toolResult = await toolCall.result;
 					let toolResultInserted = false;
 
@@ -142,6 +159,7 @@ export function activate(context: vscode.ExtensionContext) {
 							new vscode.LanguageModelToolResultPart(toolCall.call.toolCallId, toolResult['text/plain']!)
 						];
 						messages.push(message);
+						cacheMessagesForCurrentRun.push(message);
 						toolResultInserted = true;
 					}
 
@@ -152,6 +170,7 @@ export function activate(context: vscode.ExtensionContext) {
 							new vscode.LanguageModelToolResultPart(toolCall.call.toolCallId, markdownTextForImage)
 						];
 						messages.push(message);
+						cacheMessagesForCurrentRun.push(message);
 						toolResultInserted = true;
 					}
 
@@ -167,6 +186,13 @@ export function activate(context: vscode.ExtensionContext) {
 						//     )
 						// ];
 						// messages.push(message);
+						const message = vscode.LanguageModelChatMessage.User('');
+						message.content2 = [
+							new vscode.LanguageModelToolResultPart(toolCall.call.toolCallId, 'We encountered an error')
+						];
+						messages.push(message);
+						cacheMessagesForCurrentRun.push(message);
+
 						toolResultInserted = true;
 					}
 
@@ -195,7 +221,7 @@ export function activate(context: vscode.ExtensionContext) {
 		await runWithFunctions();
 
 		// stream.markdown(fragment);
-		return { metadata: { command: 'analyze' } };
+		return { metadata: { toolsCallCache: cacheMessagesForCurrentRun } };
 	};
 
 	//TODO: Create data agent that users can talk to
