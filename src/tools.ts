@@ -1,12 +1,13 @@
 import * as vscode from 'vscode';
-import { execute, start_kernel } from './execution/src';
+import type { PyodideKernel } from '../pyodide/node/kernel';
+import { execute, start_kernel } from './execution';
 
 interface IFindFilesParameters {
 	pattern: string;
 }
 
 export class FindFilesTool implements vscode.LanguageModelTool<IFindFilesParameters> {
-	constructor(readonly context: vscode.ExtensionContext) {}
+	constructor(readonly context: vscode.ExtensionContext) { }
 
 	async invoke(
 		options: vscode.LanguageModelToolInvocationOptions<IFindFilesParameters>,
@@ -49,7 +50,7 @@ interface IRunPythonParameters {
 }
 
 export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParameters> {
-	private _kernelPromise: Promise<unknown>;
+	private _kernelPromise: Promise<PyodideKernel>;
 	constructor(context: vscode.ExtensionContext) {
 		this._kernelPromise = start_kernel(context);
 	}
