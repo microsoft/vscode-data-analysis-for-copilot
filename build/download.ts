@@ -43,7 +43,7 @@ type ReleaseInfo = {
 	}[];
 };
 export async function downloadPyodideScripts() {
-	spawnSync('git checkout origin/pyodide -- resources/pyodide.zip', { cwd: path.join(__dirname, '..'), shell: true });
+	spawnSync('git restore --source=pyodide --worktree resources/pyodide.zip', { cwd: path.join(__dirname, '..'), shell: true });
 	const tarFile = path.join(__dirname, '..', 'resources', 'pyodide.zip');
 	const dir = path.join(__dirname, '..', 'pyodide');
 	if (!fs.existsSync(dir)) {
