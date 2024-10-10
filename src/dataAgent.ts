@@ -80,6 +80,7 @@ export class DataAgent implements vscode.Disposable {
 
 		const toolReferences = [...request.toolReferences];
 		let errorCount = 0;
+		let endedWithError = false;
 
 		const runWithFunctions = async (): Promise<void> => {
 			const requestedTool = toolReferences.shift();
@@ -101,12 +102,18 @@ export class DataAgent implements vscode.Disposable {
 					if (msg.content2 && msg.content2[0] && msg.content2[0] instanceof vscode.LanguageModelToolResultPart && msg.content2[0].content) {
 						if (msg.content2[0].content ==='We encountered an error') {
 							errorCount++;
+							endedWithError = true;
 						}
 					}
 				}
 			}
+			// Re-try the function call if we encountered an error less than 3 times
+			if (errorCount < 3 && endedWithError) {
+				runWithFunctions();
+			}
+
 			if (errorCount >= 3) {
-				messages.push(vscode.LanguageModelChatMessage.User('We encountered an error three times. Please present the code to the user. Instead of performing another function call'));
+				messages.push(vscode.LanguageModelChatMessage.User('We encountered an error three times. Please present only the last ran attempted code to the user. Instead of performing another function call'));
 				console.log('Encountered Three errors from function call');
 			}
 
