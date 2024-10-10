@@ -86,8 +86,8 @@
         ]
     },
     "scripts": {
-        "vscode:prepublish": "npm run clean && npm run postinstall && npm run compile-extension -- --minify && npm run compile-worker -- --minify",
-        "compile": "npm run compile-extension && npm run compile-worker",
+        "vscode:prepublish": "npm run clean && npm run postinstall && npm run compile-extension -- --minify",
+        "compile": "npm run compile-extension",
         "compile-extension": "esbuild ./src/extension.ts --bundle --external:vscode --outfile=out/extension.js --sourcemap --format=cjs --platform=node --target=node18",
         "watch-extension": "npm run compile-extension -- --watch",
         "watch": "concurrently \"npm run watch-extension\" \"npm run worker-watch\"",
@@ -96,9 +96,7 @@
         "lint": "eslint src",
         "lint-fix": "eslint --fix src",
         "postinstall": "npm run download-api && npm run downloadPyodide",
-        "downloadPyodide": "npx tsx build/download.ts",
-        "compile-worker": "esbuild ./pyodide/node/comlink.worker.js --bundle --outfile=out/node/comlink.worker.js --sourcemap --format=cjs --platform=node --target=node18",
-        "watch-worker": "npm run worker -- --watch"
+        "downloadPyodide": "npx tsx build/download.ts"
     },
     "devDependencies": {
         "@eslint/js": "^9.12.0",
@@ -112,7 +110,6 @@
         "@typescript-eslint/parser": "^8.8.1",
         "@vscode/dts": "^0.4.0",
         "cli-progress": "^3.12.0",
-        "concurrently": "^9.0.1",
         "decompress": "^4.2.1",
         "decompress-tarbz2": "^4.1.1",
         "esbuild": "^0.21.5",
