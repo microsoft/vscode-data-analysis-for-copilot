@@ -406,3 +406,4 @@ pyodidex/
 
 dist/
 vscode.proposed.*.d.ts
+tsconfig.tsbuildinfo
