@@ -28,7 +28,6 @@ export class PyodideComlinkKernel extends PyodideRemoteKernel {
 }
 
 parentPort!.once('message', (msg: any) => {
-    debugger;
     const worker = new PyodideComlinkKernel(new SyncMessaging(msg));
     expose(worker, nodeEndpoint(parentPort!));
 });

@@ -29,7 +29,6 @@ export abstract class BasePyodideKernel extends BaseKernel implements IKernel {
         super(options);
         this._worker = this.initWorker(options);
         this.syncMessaging = new SyncMessaging(this._worker);
-        debugger;
         this._worker.postMessage({ Init: 123 });
         this._remoteKernel = this.initRemote(options);
     }
@@ -62,10 +61,9 @@ export abstract class BasePyodideKernel extends BaseKernel implements IKernel {
     protected initRemoteOptions(options: PyodideKernel.IOptions): IPyodideWorkerKernel.IOptions {
         const { pyodideUrl } = options;
         const indexUrl = pyodideUrl.slice(0, pyodideUrl.lastIndexOf('/') + 1);
-        const baseUrl = PageConfig.getBaseUrl();
+        const baseUrl = options.baseUrl || PageConfig.getBaseUrl();
 
         const pipliteUrls = [...(options.pipliteUrls || [])];
-        // const pipliteUrls = [...(options.pipliteUrls || []), allJSONUrl.default];
 
         const disablePyPIFallback = !!options.disablePyPIFallback;
 
@@ -79,7 +77,8 @@ export abstract class BasePyodideKernel extends BaseKernel implements IKernel {
             location: this.location,
             mountDrive: options.mountDrive,
             loadPyodideOptions: options.loadPyodideOptions || {
-                lockFileURL: '/Users/donjayamanne/Downloads/pyodide-assets/pyodide-lock.json',
+                lockFileURL:
+                    baseUrl + (!baseUrl.endsWith('/') && !baseUrl.endsWith('\\') ? '/' : '') + '/pyodide-lock.json',
                 packages: []
             }
         };
@@ -364,7 +363,7 @@ export namespace PyodideKernel {
         // contentsManager: Contents.IManager;
 
         /**
-         * Directory containing the Pyodide package
+         * Path to the worker script file to be loaded in the worker.
          */
         packagePath: string;
     }

@@ -3,7 +3,6 @@
 
 import { BasePyodideKernel } from '../common/kernel';
 import type { PyodideKernel as PyodideKernelTypes } from '../common/kernel';
-import * as path from 'path';
 import { Worker } from 'node:worker_threads';
 /**
  * A kernel that executes Python code with Pyodide.
@@ -27,6 +26,6 @@ export class PyodideKernel extends BasePyodideKernel {
      * webpack to find it.
      */
     protected override initWorker(options: PyodideKernelTypes.IOptions): Worker {
-        return new Worker(path.join(options.packagePath, 'node', 'comlink.worker.js'), {});
+        return new Worker(options.packagePath, {});
     }
 }

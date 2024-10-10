@@ -17,7 +17,6 @@ import * as fs from 'fs';
 // };
 export class PyodideRemoteKernel {
     constructor(private readonly syncMessaging: SyncMessaging) {
-        debugger;
         this._initialized = new Promise((resolve, reject) => {
             this._initializer = { resolve, reject };
         });
