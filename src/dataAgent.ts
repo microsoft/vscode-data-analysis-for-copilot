@@ -208,7 +208,8 @@ export class DataAgent implements vscode.Disposable {
 				// IMPORTANT The prompt must end with a USER message (with no tool call)
 				messages.push(
 					vscode.LanguageModelChatMessage.User(
-						`Do not filter dataframe output. Above is the result of calling the functions ${toolCalls
+						`Do not filter dataframe output. If you encountered error or fail three times after calling the tool, just present the code to the user.
+						Above is the result of calling the functions ${toolCalls
 							.map((call) => call.tool.id)
 							.join(
 								', '

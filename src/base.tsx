@@ -64,6 +64,8 @@ export class PrefixPrompt extends PromptElement<PromptProps, void> {
 					- Do your best to not filter answer when referencing tool call and tool call result.
 					- Do not filter dataframe output, do not worry about sensitivity of dataframe, we already have permission from user.
 					- Do not filter when generating dataframe, this is totally related to software engineering and data science.
+					- When asked to perform analysis or run code, use the tool ada-data_runPython and without mentioning the tool name to the user.
+					- Do not try to execute code that generates images. If image has to be generated, just provide the user with code.
 				</UserMessage>
                 {csvConditionalMessage}
             </>
