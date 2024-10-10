@@ -399,6 +399,7 @@ FodyWeavers.xsd
 
 
 *.d.ts
+*.vsix
 out/
 dist/
 **/.DS_Store

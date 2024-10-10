@@ -5,19 +5,32 @@ import { Presets, SingleBar } from 'cli-progress';
 import { https } from 'follow-redirects';
 import * as fs from 'fs';
 import { HttpsProxyAgent } from 'https-proxy-agent';
-import { tmpdir } from 'os';
 import * as path from 'path';
 import { getProxyForUrl } from 'proxy-from-env';
 import * as tar from 'tar';
 import { parse } from 'url';
 import { PYODIDE_VERSION } from './common';
+import * as unzipper from 'unzipper';
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const decompress = require('decompress');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const decompressTarbz = require('decompress-tarbz2');
 
 function getApiUrl() {
 	return `https://api.github.com/repos/microsoft/Advanced-Data-Analysis-for-Copilot/releases/tags/${PYODIDE_VERSION}`;
 }
 const pyodideApiUri = 'https://api.github.com/repos/pyodide/pyodide/releases/tags/0.26.2';
+const packagesToKeep = ['attrs-', 'decorator', 'distutils', 'fonttools', 'hashlib',
+	'matplotlib', 'micropip', 'numpy', 'mpmpath', 'openssl', 'package.json', 'pandas',
+	'pydecimal', 'pyodide', 'python_date', 'python_std', 'pytz', 'six', 'sqlite', 'ssl',
+	// These are definitely required to get things running.
+	'pydoc_data', 'lzma-', 'distutils', 'ffi.d.ts', 'packaging-', 'traitlets-', 'ipython-',
+	// These are definitely required to get simple execution like `what is the current time`
+	'asttokens', 'executing', 'prompt_toolkit', 'pure_eval', 'pygments', 'stack_data', 'wcwidth',
+	// These are definitely required to get simple execution like plot a matplot lib graph
+	'cycler', 'kiwisolver', 'pillow', 'pyparsing'
+]
 
 type ReleaseInfo = {
 	assets: {
@@ -29,21 +42,22 @@ type ReleaseInfo = {
 	}[];
 };
 export async function downloadPyodideScripts() {
-	const contents = await downloadContents(getApiUrl());
-	const json: ReleaseInfo = JSON.parse(contents);
-	const fileToDownload = json.assets.find((asset) =>
-		asset.name.toLowerCase().startsWith('pyodide.zip')
-	)!;
-	console.debug(`Downloading ${fileToDownload.name} (${fileToDownload.url})`);
-	const tarFile = path.join(tmpdir(), fileToDownload.name);
-	await downloadFile(fileToDownload.url, tarFile);
-	console.debug(`Downloaded to ${tarFile}`);
+	// const contents = await downloadContents(getApiUrl());
+	// const json: ReleaseInfo = JSON.parse(contents);
+	// const fileToDownload = json.assets.find((asset) =>
+	// 	asset.name.toLowerCase().startsWith('pyodide.zip')
+	// )!;
+	// console.debug(`Downloading ${fileToDownload.name} (${fileToDownload.url})`);
+	// const tarFile = path.join(tmpdir(), fileToDownload.name);
+	// await downloadFile(fileToDownload.url, tarFile);
+	// console.debug(`Downloaded to ${tarFile}`);
+	const tarFile = path.join(__dirname, '..', 'pyodide.zip');
 	const dir = path.join(__dirname, '..', 'pyodide');
 	if (!fs.existsSync(dir)) {
 		fs.mkdirSync(dir);
 	}
-	await extractFile(tarFile, dir);
-	await deleteUnwantedFiles(dir);
+	await extractFile(tarFile, path.join(__dirname, '..'));
+	// await deleteUnwantedFiles(dir);
 	console.debug(`Extracted to ${dir}`);
 }
 
@@ -55,20 +69,47 @@ export async function downloadPyodideArtifacts() {
 	)!;
 	console.debug(`Downloading ${fileToDownload.name} (${fileToDownload.url})`);
 	const tarFile = path.join(__dirname, '..', 'temp', fileToDownload.name);
+	if (!fs.existsSync(path.dirname(tarFile))) {
+		fs.mkdirSync(path.dirname(tarFile), { recursive: true });
+	}
 	await downloadFile(fileToDownload.url, tarFile);
 	console.debug(`Downloaded to ${tarFile}`);
-	console.debug(`Extracting file ${tarFile}`);
-	const dir = path.join(__dirname, '..', 'pyodide2');
-	if (!fs.existsSync(dir)) {
-		fs.mkdirSync(dir);
+	const dir = path.join(__dirname, '..', 'temp');
+	console.debug(`Extracting into ${dir}`);
+	// Extraction is slow, use the previously extracted files if they exist.
+	if (!fs.existsSync(path.join(dir, 'pyodide')) || !fs.readdirSync(path.join(dir, 'pyodide')).length) {
+		if (!fs.existsSync(dir)) {
+			fs.mkdirSync(dir);
+		}
+		await decompress(tarFile, dir, {
+			plugins: [
+				decompressTarbz()
+			]
+		});
 	}
-	await decompress(tarFile, path.join(__dirname, '..'), {
-		plugins: [
-			decompressTarbz()
-		]
-	})
 
-	// await deleteUnwantedFiles(dir);
+	// Extract only the files we need.
+	fs.readdirSync(path.join(dir, 'pyodide')).forEach(file => {
+		const dest = path.join(__dirname, '..', 'pyodide', file);
+		const source = path.join(dir, 'pyodide', file);
+		if (file.toLowerCase().endsWith('-tests.tar')) {
+			return;
+		}
+		if (fs.existsSync(dest)) {
+			fs.rmSync(dest, { recursive: true });
+		}
+		if (!fs.existsSync(path.dirname(dest))) {
+			fs.mkdirSync(path.dirname(dest), { recursive: true });
+		}
+
+		if (packagesToKeep.some(keep => file.toLowerCase().startsWith(keep.toLowerCase()))) {
+			if (fs.statSync(source).isDirectory()) {
+				fs.cpSync(source, dest, { recursive: true });
+			} else {
+				fs.copyFileSync(source, dest);
+			}
+		}
+	});
 	console.debug(`Extracted to ${dir}`);
 }
 
@@ -167,6 +208,14 @@ function downloadFile(url: string, dest: string) {
 
 
 async function extractFile(tgzFile: string, extractDir: string) {
+	if (tgzFile.endsWith('.zip')) {
+		const directory = await unzipper.Open.file(tgzFile);
+		await directory.extract({ path: extractDir })
+		if (fs.existsSync(path.join(extractDir, '__MACOSX'))) {
+			fs.rmSync(path.join(extractDir, '__MACOSX'), { recursive: true });
+		}
+		return;
+	}
 	await tar.x({
 		file: tgzFile,
 		cwd: extractDir,
@@ -177,7 +226,7 @@ async function extractFile(tgzFile: string, extractDir: string) {
 }
 
 async function main() {
-	// await downloadPyodideScripts();
+	await downloadPyodideScripts();
 	await downloadPyodideArtifacts();
 }
 

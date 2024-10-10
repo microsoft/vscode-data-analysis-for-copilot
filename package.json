@@ -86,12 +86,13 @@
         ]
     },
     "scripts": {
-        "vscode:prepublish": "npm run compile-extension -- --minify && npm run compile-worker -- --minify",
+        "vscode:prepublish": "npm run clean && npm run postinstall && npm run compile-extension -- --minify && npm run compile-worker -- --minify",
         "compile": "npm run compile-extension && npm run compile-worker",
         "compile-extension": "esbuild ./src/extension.ts --bundle --external:vscode --outfile=out/extension.js --sourcemap --format=cjs --platform=node --target=node18",
         "watch-extension": "npm run compile-extension -- --watch",
         "watch": "concurrently \"npm run watch-extension\" \"npm run worker-watch\"",
         "download-api": "dts main",
+        "clean": "npx tsx build/clean.ts",
         "lint": "eslint src",
         "lint-fix": "eslint --fix src",
         "postinstall": "npm run download-api && npm run downloadPyodide",
@@ -126,7 +127,8 @@
         "tar": "^7.4.3",
         "tsx": "^4.19.1",
         "typescript": "^5.6.3",
-        "typescript-eslint": "^8.8.1"
+        "typescript-eslint": "^8.8.1",
+        "unzipper": "^0.12.3"
     },
     "dependencies": {
         "@jupyterlab/coreutils": "^6.2.2",

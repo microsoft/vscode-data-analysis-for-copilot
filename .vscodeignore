@@ -3,7 +3,10 @@
 node_modules/**
 src/**
 .gitignore
+.nvmrc
 .yarnrc
+*.vsix
+eslint.config.mjs
 webpack.config.js
 vsc-extension-quickstart.md
 **/tsconfig.json
@@ -11,6 +14,7 @@ vsc-extension-quickstart.md
 **/*.map
 **/*.ts
 **/*.d.ts
+build/**
 pyodide/node/*.js
 pyodide/node/*.js.map
 pyodide/node/*.d.ts
@@ -18,3 +22,5 @@ pyodide/common/*.js
 pyodide/common/*.js.map
 pyodide/common/*.d.ts
 pyodide/*.map
+pyodide.zip
+temp/**

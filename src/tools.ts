@@ -1,7 +1,5 @@
 import * as vscode from 'vscode';
-import type { PyodideKernel } from '../pyodide/node/kernel';
-import { execute, start_kernel } from './execution';
-import { KernelMessage } from '@jupyterlab/services';
+import type { Kernel } from '../pyodide/node/index';
 
 interface IFindFilesParameters {
 	pattern: string;
@@ -51,19 +49,23 @@ interface IRunPythonParameters {
 }
 
 export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParameters> {
-	private _kernelPromise: Promise<PyodideKernel>;
-	private readonly messageEmitter = new vscode.EventEmitter<KernelMessage.IMessage>();
+	private _kernel: Kernel;
 	constructor(context: vscode.ExtensionContext) {
-		this._kernelPromise = start_kernel(context, this.messageEmitter);
+		const pyodidePath = vscode.Uri.joinPath(context.extensionUri, 'pyodide');
+		const kernelPath = vscode.Uri.joinPath(pyodidePath, 'node', 'index.js').fsPath;
+		const workerPath = vscode.Uri.joinPath(pyodidePath, 'node', 'comlink.worker.js').fsPath;
+		// eslint-disable-next-line @typescript-eslint/no-require-imports
+		const { Kernel } = require(kernelPath) as typeof import('../pyodide/node/index');
+		const folder = vscode.workspace.workspaceFolders?.length ? vscode.workspace.workspaceFolders[0].uri.fsPath : ''
+		this._kernel = new Kernel(pyodidePath.fsPath, workerPath, folder);
 	}
 
 	async invoke(
 		options: vscode.LanguageModelToolInvocationOptions<IRunPythonParameters>,
 		_token: vscode.CancellationToken
 	) {
-		const kernel = await this._kernelPromise;
 		const code = sanitizePythonCode(options.parameters.code);
-		const result = await execute(kernel, this.messageEmitter, code);
+		const result = await this._kernel.execute(code);
 
 		console.log(result);
 		const resultData: { [key: string]: unknown } = {};
