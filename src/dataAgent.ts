@@ -91,6 +91,24 @@ export class DataAgent implements vscode.Disposable {
 
 			console.log('SENDING REQUEST', messages);
 			const toolCalls: IToolCall[] = [];
+
+			// Loop through the messages, check if there are 3 or greater # of tool call error -
+			// Tell Language Model to just present the code to user without further tool call
+			let errorCount = 0;
+			for (const msg of messages) {
+				if (msg && msg instanceof vscode.LanguageModelChatMessage) {
+					if (msg.content2 && msg.content2[0] && msg.content2[0] instanceof vscode.LanguageModelToolResultPart && msg.content2[0].content) {
+						if (msg.content2[0].content ==='We encountered an error') {
+							errorCount++;
+						}
+					}
+				}
+			}
+			if (errorCount >= 3) {
+				messages.push(vscode.LanguageModelChatMessage.User('We encountered an error three times. Please present the code to the user. Instead of performing another function call'));
+				console.log('Encountered Three errors from function call');
+			}
+
 			const response = await chat.sendRequest(messages, options, token);
 
 			if (response.stream) {
