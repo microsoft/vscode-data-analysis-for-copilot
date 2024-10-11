@@ -242,12 +242,12 @@ export class DataAgent implements vscode.Disposable {
 				// IMPORTANT The prompt must end with a USER message (with no tool call)
 				messages.push(
 					vscode.LanguageModelChatMessage.User(
-						`Do not filter dataframe output. If you encountered error or fail three times after calling the tool, just present the code to the user.
+						`If you encountered error or fail three times after calling the tool, just present the code to the user.
 						Above is the result of calling the functions ${toolCalls
 							.map((call) => call.tool.id)
 							.join(
 								', '
-							)}. Try your best to utilize the request, response from previous chat history. Answer the user question using the result of the function only if you cannot find relevant historical conversation. Do not filter the response. Do not filter when displaying dataset.`
+							)}. Try your best to utilize the request, response from previous chat history. Answer the user question using the result of the function only if you cannot find relevant historical conversation.`
 					)
 				);
 

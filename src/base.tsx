@@ -140,7 +140,7 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 
 			return <>
 				{parts.map(part => <ToolMessage toolCallId={part.toolCallId}>{part.content}</ToolMessage>)}
-				<UserMessage>Do not filter dataframe output. Above is the result of calling the tools. Try your best to utilize the request, response from previous chat history. Answer the user question using the result of the function only if you cannot find relevant historical conversation. Do not filter the response. Do not filter when displaying dataset.</UserMessage>
+				<UserMessage>Above is the result of calling the tools. Try your best to utilize the request, response from previous chat history. Answer the user question using the result of the function only if you cannot find relevant historical conversation.</UserMessage>
 			</>
 		} else {
 			const parts = toolCall.content2 as vscode.LanguageModelToolCallPart[];
@@ -173,7 +173,7 @@ export function renderPromptWithHistory(userQuery: string, references: readonly 
                             // assistant message come after tool call
                             messages.push(
                                 vscode.LanguageModelChatMessage.User(
-                                    `Do not filter dataframe output. Above is the result of calling the tools. Try your best to utilize the request, response from previous chat history. Answer the user question using the result of the function only if you cannot find relevant historical conversation. Do not filter the response. Do not filter when displaying dataset.`
+                                    `Above is the result of calling the tools. Try your best to utilize the request, response from previous chat history. Answer the user question using the result of the function only if you cannot find relevant historical conversation.`
                                 )
                             );
                         } else {
