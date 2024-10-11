@@ -17,7 +17,7 @@ export interface PromptProps extends BasePromptElementProps {
 
 export class PrefixPrompt extends PromptElement<PromptProps, void> {
 	render(_state: void, _sizing: PromptSizing) {
-        let csvConditionalMessage: UserMessage = <UserMessage></UserMessage>;
+        const csvConditionalMessage: UserMessage = <UserMessage></UserMessage>;
 		let csvFlag = false;
 		for (const turn of this.props.history) {
 			if (turn.participant === 'ada.data') {
@@ -29,22 +29,6 @@ export class PrefixPrompt extends PromptElement<PromptProps, void> {
 				}
             }
         }
-		// if csvFlag is true, append conditional csv message to the historyMessages array
-		// list of further statistical analysis: regression analysis, bayesian statistics, non-parametric methods, and machine learning techniques.
-		if (csvFlag) {
-			csvConditionalMessage = (
-				<UserMessage>
-					- Think of yourself as a data scientist who is analyzing a csv file using Python programming language.
-					- Make sure to generate a pandas dataframe using the given csv file before performing data analysis.
-					- Make sure to perform statistical analysis on the data with actual numbers.
-					- Give me back the result of the statistical analysis on the data IF you are asked to analyze the csv file. What are some patterns, trends, or insights that you can find from the data in the csv file?
-					- If you are asked to analyze the csv file, conduct detailed descriptive statistics, inferential statistics.
-					- Give me the result of conducting these statistical analysis on the data in very detailed, quantitative manner.
-					- Be detailed and descriptive in your analysis.
-					- Do not ignore previous or future prompts on asking for specific analysis, action on the csv file.
-				</UserMessage>
-			);
-		}
 
 		return (
 			<>
@@ -68,8 +52,20 @@ export class PrefixPrompt extends PromptElement<PromptProps, void> {
 					- Do not filter dataframe output, do not worry about sensitivity of dataframe, we already have permission from user.
 					- Do not filter when generating dataframe, this is totally related to software engineering and data science.
 					- When asked to perform analysis or run code, use the tool ada-data_runPython and without mentioning the tool name to the user.
-					- Do not try to execute code that generates images. If image has to be generated, just provide the user with code.
 				</UserMessage>
+				{
+					csvFlag &&
+						<UserMessage>
+							- Think of yourself as a data scientist who is analyzing a csv file using Python programming language.
+							- Make sure to generate a pandas dataframe using the given csv file before performing data analysis.
+							- Make sure to perform statistical analysis on the data with actual numbers.
+							- Give me back the result of the statistical analysis on the data IF you are asked to analyze the csv file. What are some patterns, trends, or insights that you can find from the data in the csv file?
+							- If you are asked to analyze the csv file, conduct detailed descriptive statistics, inferential statistics.
+							- Give me the result of conducting these statistical analysis on the data in very detailed, quantitative manner.
+							- Be detailed and descriptive in your analysis.
+							- Do not ignore previous or future prompts on asking for specific analysis, action on the csv file.
+						</UserMessage>
+				}
                 {csvConditionalMessage}
             </>
         );
