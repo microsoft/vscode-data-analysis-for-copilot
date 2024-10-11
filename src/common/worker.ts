@@ -26,7 +26,6 @@ export class PyodideRemoteKernel {
         this._options = options;
         const originalFetch = globalThis.fetch;
         globalThis.fetch = async (input: string | URL | Request, init?: RequestInit) => {
-            console.log(`xxFetch ${JSON.stringify(input)} with ${JSON.stringify(init)}`);
             if (typeof input === 'string' && input.endsWith('/pypi/all.json')) {
                 const separator = options.baseUrl.includes('/') ? '/' : '\\';
                 const endsWithSeparator = options.baseUrl.endsWith('/') || options.baseUrl.endsWith('\\');
@@ -64,7 +63,6 @@ export class PyodideRemoteKernel {
             // ...options.loadPyodideOptions,
             stdout(msg: string) {
                 // sendMessage(`Python Output >> ${msg}`);
-                console.log(msg);
             },
             stdin: () => {
                 // sendMessage('Python Input Requested');

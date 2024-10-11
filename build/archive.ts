@@ -7,7 +7,7 @@ import archiver from 'archiver';
 
 function main() {
     // create a file to stream archive data to.
-    const outputFile = path.join(__dirname, '..', 'release', 'pyodide.zip');
+    const outputFile = path.join(__dirname, '..', 'resources', 'pyodide.zip');
     if (fs.existsSync(outputFile)) {
         fs.rmSync(outputFile);
     }
@@ -22,7 +22,7 @@ function main() {
     // append files from a sub-directory, putting its contents at the root of archive
     archive.directory(path.join(__dirname, '..', 'pyodide/'), false);
     archive.finalize();
-    console.log('Pyodide (release) archive created in release/pyodide.zip');
+    console.log('Pyodide (release) archive created in resources/pyodide.zip');
 }
 
 main();

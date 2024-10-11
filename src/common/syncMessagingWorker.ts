@@ -23,15 +23,10 @@ export class SyncMessaging {
 
     public wait(): string {
         const length = this.ctrlWait();
-        // read response
         for (let i = 0; i < length; i++) {
             decodeBuffer[i] = Atomics.load(this.valueBuffer, i);
         }
-        // decodeBuffer.set(valueBuffer)
-        const res = decoder.decode(decodeBuffer.slice(0, length));
-
-        console.error('wait', res);
-        return res;
+        return decoder.decode(decodeBuffer.slice(0, length));
     }
 
     ctrlWait() {
