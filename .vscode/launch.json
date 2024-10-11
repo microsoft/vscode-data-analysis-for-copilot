@@ -6,6 +6,19 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
+            "name": "Debug",
+            "request": "launch",
+            "runtimeArgs": [
+                "run-script",
+                "debug"
+            ],
+            "runtimeExecutable": "npm",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node"
+        },
+		{
 			"name": "Extension Tests",
 			"type": "extensionHost",
 			"request": "launch",
