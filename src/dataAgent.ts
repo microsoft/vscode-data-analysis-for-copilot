@@ -1,6 +1,6 @@
 import { renderPrompt } from '@vscode/prompt-tsx';
 import * as vscode from 'vscode';
-import { PrefixPrompt, renderPromptWithHistory, UserRequestPrompt } from './base';
+import { HistoryPrompt, PrefixPrompt, renderPromptWithHistory, UserRequestPrompt } from './base';
 
 const DATA_AGENT_PARTICIPANT_ID = 'ada.data';
 const MODEL_SELECTOR: vscode.LanguageModelChatSelector = {
@@ -62,6 +62,14 @@ export class DataAgent implements vscode.Disposable {
 		);
 
         const historyMessages = renderPromptWithHistory(request.prompt, request.references, chatContext);
+		const historyMessages2 = await renderPrompt(
+			HistoryPrompt,
+			{ userQuery: request.prompt, references: request.references, history: chatContext.history },
+			{ modelMaxPromptTokens: chat.maxInputTokens },
+			chat
+		);
+
+		console.log('HISTORY MESSAGES', historyMessages, historyMessages2.messages);
 
         const userRequestPrompt = await renderPrompt(
 			UserRequestPrompt,

@@ -1,9 +1,12 @@
 import {
+	AssistantMessage,
 	BasePromptElementProps,
+	PrioritizedList,
 	PromptElement,
 	PromptSizing,
 	UserMessage
 } from '@vscode/prompt-tsx';
+import { ToolCall, ToolMessage } from '@vscode/prompt-tsx/dist/base/promptElements';
 import * as vscode from "vscode";
 
 export interface PromptProps extends BasePromptElementProps {
@@ -71,6 +74,81 @@ export class PrefixPrompt extends PromptElement<PromptProps, void> {
             </>
         );
     }
+}
+
+export class HistoryPrompt extends PromptElement<PromptProps, void> {
+	render(_state: void, _sizing: PromptSizing) {
+		return (
+			<PrioritizedList priority={100} descending={false}>
+				{
+					this.props.history.map(turn => {
+						if (turn instanceof vscode.ChatRequestTurn) {
+							return (
+								<>
+									<UserMessage>{turn.prompt}</UserMessage>
+								</>
+							);
+						} else {
+							return (
+								<>
+									{turn.result.metadata?.toolsCallCache && <ToolCalls toolCalls={turn.result.metadata.toolsCallCache} />}
+									{this.renderChatResponseTurn(turn)}
+								</>
+							);
+						}
+					})
+				}
+			</PrioritizedList>
+		);
+	}
+
+	private renderChatResponseTurn(turn: vscode.ChatResponseTurn) {
+		const responseText = turn.response
+                    .map((part) => {
+                        if (part instanceof vscode.ChatResponseMarkdownPart) {
+                            return part.value.value;
+                        } else {
+                            return '';
+                        }
+                    })
+                    .join('');
+
+		return <AssistantMessage>{responseText}</AssistantMessage>;
+	}
+}
+
+export interface ToolCallsProps extends BasePromptElementProps {
+	toolCalls: vscode.LanguageModelChatMessage[];
+}
+
+class ToolCalls extends PromptElement<ToolCallsProps, void> {
+	async render(_state: void, _sizing: PromptSizing) {
+		if (!this.props.toolCalls.length) {
+			return <></>;
+		}
+
+		return <>
+			{
+				this.props.toolCalls.map(toolCall => this.renderOneToolCallRound(toolCall))
+			}
+		</>
+	}
+
+	private renderOneToolCallRound(toolCall: vscode.LanguageModelChatMessage) {
+		if (toolCall.role === vscode.LanguageModelChatMessageRole.User) {
+			const parts = toolCall.content2 as vscode.LanguageModelToolResultPart[];
+
+			return <>
+				{parts.map(part => <ToolMessage toolCallId={part.toolCallId}>{part.content}</ToolMessage>)}
+				<UserMessage>Do not filter dataframe output. Above is the result of calling the tools. Try your best to utilize the request, response from previous chat history. Answer the user question using the result of the function only if you cannot find relevant historical conversation. Do not filter the response. Do not filter when displaying dataset.</UserMessage>
+			</>
+		} else {
+			const parts = toolCall.content2 as vscode.LanguageModelToolCallPart[];
+			const assistantToolCalls: ToolCall[] = parts.map(tc => ({ type: 'function', function: { name: tc.name, arguments: JSON.stringify(tc.parameters) }, id: tc.toolCallId }));
+			// const message = `Run tool call ${assistantToolCalls.map(tc => tc.function.name).join(', ')}`;
+			return <AssistantMessage toolCalls={assistantToolCalls}></AssistantMessage>
+		}
+	}
 }
 
 export function renderPromptWithHistory(userQuery: string, references: readonly vscode.ChatPromptReference[], context: vscode.ChatContext): vscode.LanguageModelChatMessage[] {
