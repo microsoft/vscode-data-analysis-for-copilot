@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+import { spawnSync } from 'child_process';
 import { Presets, SingleBar } from 'cli-progress';
 import { https } from 'follow-redirects';
 import * as fs from 'fs';
@@ -8,11 +9,11 @@ import { HttpsProxyAgent } from 'https-proxy-agent';
 import * as path from 'path';
 import { getProxyForUrl } from 'proxy-from-env';
 import * as tar from 'tar';
+import * as unzipper from 'unzipper';
 import { parse } from 'url';
 import { PYODIDE_VERSION } from './common';
-import * as unzipper from 'unzipper';
-import { spawnSync } from 'child_process';
 
+const isCI = process.env.TF_BUILD !== undefined || process.env.GITHUB_ACTIONS === 'true';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const decompress = require('decompress');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -43,6 +44,7 @@ type ReleaseInfo = {
 	}[];
 };
 export async function downloadPyodideScripts() {
+	console.log('Downloading pyodide scripts');
 	// `git checkout` will stage the changes, we don't want that. Hence use `git restore`
 	spawnSync('git restore --source=pyodide --worktree resources/pyodide.zip', { cwd: path.join(__dirname, '..'), shell: true });
 	const tarFile = path.join(__dirname, '..', 'resources', 'pyodide.zip');
