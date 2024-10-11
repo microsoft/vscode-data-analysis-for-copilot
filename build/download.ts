@@ -13,7 +13,6 @@ import * as unzipper from 'unzipper';
 import { parse } from 'url';
 import { PYODIDE_VERSION } from './common';
 
-const isCI = process.env.TF_BUILD !== undefined || process.env.GITHUB_ACTIONS === 'true';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const decompress = require('decompress');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -46,7 +45,7 @@ type ReleaseInfo = {
 export async function downloadPyodideScripts() {
 	console.log('Downloading pyodide scripts');
 	// `git checkout` will stage the changes, we don't want that. Hence use `git restore`
-	spawnSync('git restore --source=pyodide --worktree resources/pyodide.zip', { cwd: path.join(__dirname, '..'), shell: true });
+	spawnSync('git restore --source=origin/pyodide --worktree resources/pyodide.zip', { cwd: path.join(__dirname, '..'), shell: true });
 	const tarFile = path.join(__dirname, '..', 'resources', 'pyodide.zip');
 	const dir = path.join(__dirname, '..', 'pyodide');
 	if (!fs.existsSync(dir)) {
