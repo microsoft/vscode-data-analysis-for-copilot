@@ -1,12 +1,12 @@
 import * as vscode from 'vscode';
-import { execute, start_kernel } from './execution/src';
+import type { Kernel } from '../pyodide/node/index';
 
 interface IFindFilesParameters {
 	pattern: string;
 }
 
 export class FindFilesTool implements vscode.LanguageModelTool<IFindFilesParameters> {
-	constructor(readonly context: vscode.ExtensionContext) {}
+	constructor(readonly context: vscode.ExtensionContext) { }
 
 	async invoke(
 		options: vscode.LanguageModelToolInvocationOptions<IFindFilesParameters>,
@@ -49,18 +49,23 @@ interface IRunPythonParameters {
 }
 
 export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParameters> {
-	private _kernelPromise: Promise<unknown>;
+	private _kernel: Kernel;
 	constructor(context: vscode.ExtensionContext) {
-		this._kernelPromise = start_kernel(context);
+		const pyodidePath = vscode.Uri.joinPath(context.extensionUri, 'pyodide');
+		const kernelPath = vscode.Uri.joinPath(pyodidePath, 'node', 'index.js').fsPath;
+		const workerPath = vscode.Uri.joinPath(pyodidePath, 'node', 'comlink.worker.js').fsPath;
+		// eslint-disable-next-line @typescript-eslint/no-require-imports
+		const { Kernel } = require(kernelPath) as typeof import('../pyodide/node/index');
+		const folder = vscode.workspace.workspaceFolders?.length ? vscode.workspace.workspaceFolders[0].uri.fsPath : ''
+		this._kernel = new Kernel(pyodidePath.fsPath, workerPath, folder);
 	}
 
 	async invoke(
 		options: vscode.LanguageModelToolInvocationOptions<IRunPythonParameters>,
 		_token: vscode.CancellationToken
 	) {
-		const kernel = await this._kernelPromise;
 		const code = sanitizePythonCode(options.parameters.code);
-		const result = await execute(kernel, code);
+		const result = await this._kernel.execute(code);
 
 		console.log(result);
 		const resultData: { [key: string]: unknown } = {};
