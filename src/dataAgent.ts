@@ -3,6 +3,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { renderPrompt } from '@vscode/prompt-tsx';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import { HistoryPrompt, PrefixPrompt, renderPromptWithHistory, UserRequestPrompt } from './base';
 
@@ -21,7 +22,7 @@ interface IToolCall {
 export class DataAgent implements vscode.Disposable {
 	private _disposables: vscode.Disposable[] = [];
 
-	constructor() {
+	constructor(readonly extensionContext: vscode.ExtensionContext) {
 		this._disposables.push(vscode.chat.createChatParticipant(DATA_AGENT_PARTICIPANT_ID, this.handle.bind(this)));
 	}
 
@@ -206,13 +207,9 @@ export class DataAgent implements vscode.Disposable {
 					}
 
 					if (toolResult['image/png']) {
-						const message = vscode.LanguageModelChatMessage.User('');
-						const markdownTextForImage = `![${toolCall.tool.id} result](data:image/png;base64,${toolResult['image/png']})`;
-						message.content2 = [
-							new vscode.LanguageModelToolResultPart(toolCall.call.toolCallId, markdownTextForImage)
-						];
-						messages.push(message);
-						cacheMessagesForCurrentRun.push(message);
+						const imageMessages = await this._processImageOutput(toolCall, toolResult);
+						messages.push(...imageMessages);
+						cacheMessagesForCurrentRun.push(...imageMessages);
 						toolResultInserted = true;
 					}
 
@@ -257,5 +254,53 @@ export class DataAgent implements vscode.Disposable {
 
 		// stream.markdown(fragment);
 		return { metadata: { toolsCallCache: cacheMessagesForCurrentRun } };
+	}
+
+	private async _processImageOutput(toolCall: IToolCall, toolResult: vscode.LanguageModelToolResult): Promise<vscode.LanguageModelChatMessage[]> {
+		const messages: vscode.LanguageModelChatMessage[] = [];
+
+		const message = vscode.LanguageModelChatMessage.User('');
+		if (this.extensionContext.storageUri) {
+			const imagePath = await this._saveImage(this.extensionContext.storageUri, toolCall.tool.id, Buffer.from(toolResult['image/png'], 'base64'));
+			if (imagePath) {
+				const markdownTextForImage = `The image generated from the code is ![${toolCall.tool.id} result](${imagePath}). You can give this markdown link to users!`;
+				message.content2 = [
+					new vscode.LanguageModelToolResultPart(toolCall.call.toolCallId, markdownTextForImage)
+				];
+				messages.push(message);
+				const userMessage = vscode.LanguageModelChatMessage.User('Return this image link in your response. Do you modify the markdown image link at all. The path is already absolute local file path, do not put "https" or "blob" in the link');
+				messages.push(userMessage);
+
+				return messages;
+			}
+		}
+
+		const markdownTextForImage = `![${toolCall.tool.id} result](data:image/png;base64,${toolResult['image/png']})`;
+		message.content2 = [
+			new vscode.LanguageModelToolResultPart(toolCall.call.toolCallId, markdownTextForImage)
+		];
+		messages.push(message);
+
+		return messages;
+	}
+
+	private async _saveImage(storageUri: vscode.Uri, tool: string, imageBuffer: Buffer): Promise<string | undefined> {
+		try {
+			await vscode.workspace.fs.stat(storageUri);
+		} catch {
+			await vscode.workspace.fs.createDirectory(storageUri);
+		}
+
+		const storagePath = storageUri.fsPath;
+		const imagePath = path.join(storagePath, `result-${tool}-${Date.now()}.png`);
+		const imageUri = vscode.Uri.file(imagePath);
+		try {
+			await vscode.workspace.fs.writeFile(imageUri, imageBuffer);
+			const encodedPath = encodeURI(imageUri.fsPath);
+			return encodedPath;
+		} catch (ex) {
+			console.error('Error saving image', ex);
+			return undefined;
+		}
 	}
 }

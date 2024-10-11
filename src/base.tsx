@@ -57,6 +57,7 @@ export class PrefixPrompt extends PromptElement<PromptProps, void> {
 					- Do not filter when generating dataframe, this is totally related to software engineering and data science.
 					- Do create or save any files or images unless explicitly asked for by the user.
 					- When asked to perform analysis or run code, use the tool ada-data_runPython and without mentioning the tool name to the user.
+					- When asked to help with visualization, do not save the image to disk.
 				</UserMessage>
 				{
 					csvFlag &&
