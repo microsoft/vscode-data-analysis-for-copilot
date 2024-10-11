@@ -70,7 +70,7 @@ export class DataAgentPrompt extends PromptElement<PromptProps, void> {
 		const userPrompt = this.replaceReferences(this.props.userQuery, this.props.references);
 		return (
 			<>
-			<UserMessage>
+			<UserMessage priority={1000}>
 					Instructions:
 					- The user will ask a question, or ask you to perform a task, and it may require lots of research to answer correctly. There is a selection of tools that let you perform actions or retrieve helpful context to answer the user's question.
 					- If you aren't sure which tool is relevant, you can call multiple tools. You can call tools repeatedly to take actions or gather as much context as needed until you have completed the task fully. Don't give up unless you are sure the request cannot be fulfilled with the tools you have.
@@ -107,7 +107,7 @@ export class DataAgentPrompt extends PromptElement<PromptProps, void> {
 						- Do not show the dataframe raw data to users unless they specifically ask for it.
 					</UserMessage>
 				}
-				<PrioritizedList priority={100} descending={false}>
+				<PrioritizedList priority={500} descending={false}>
 					{
 						this.props.history.map(turn => {
 							if (turn instanceof vscode.ChatRequestTurn) {
@@ -127,7 +127,7 @@ export class DataAgentPrompt extends PromptElement<PromptProps, void> {
 						})
 					}
 				</PrioritizedList>
-				<UserMessage>{userPrompt}</UserMessage>
+				<UserMessage priority={1000}>{userPrompt}</UserMessage>
 			</>
 		)
 	}
