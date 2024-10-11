@@ -5,7 +5,7 @@
 import { renderPrompt } from '@vscode/prompt-tsx';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { HistoryPrompt, PrefixPrompt, renderPromptWithHistory, UserRequestPrompt } from './base';
+import { HistoryPrompt, PrefixPrompt, UserRequestPrompt } from './base';
 
 const DATA_AGENT_PARTICIPANT_ID = 'ada.data';
 const MODEL_SELECTOR: vscode.LanguageModelChatSelector = {
@@ -66,15 +66,14 @@ export class DataAgent implements vscode.Disposable {
 			chat
 		);
 
-		const historyMessages = renderPromptWithHistory(request.prompt, request.references, chatContext);
-		const historyMessages2 = await renderPrompt(
+		const historyMessages = await renderPrompt(
 			HistoryPrompt,
 			{ userQuery: request.prompt, references: request.references, history: chatContext.history },
 			{ modelMaxPromptTokens: chat.maxInputTokens },
 			chat
 		);
 
-		console.log('HISTORY MESSAGES', historyMessages, historyMessages2.messages);
+		console.log('HISTORY MESSAGES', historyMessages.messages);
 
 		const userRequestPrompt = await renderPrompt(
 			UserRequestPrompt,
@@ -85,7 +84,7 @@ export class DataAgent implements vscode.Disposable {
 
 		const messages: vscode.LanguageModelChatMessage[] = [
 			...(prefixPrompt.messages as vscode.LanguageModelChatMessage[]),
-			...(historyMessages as vscode.LanguageModelChatMessage[]),
+			...(historyMessages.messages as vscode.LanguageModelChatMessage[]),
 			...(userRequestPrompt.messages as vscode.LanguageModelChatMessage[])
 		];
 
@@ -268,7 +267,7 @@ export class DataAgent implements vscode.Disposable {
 					new vscode.LanguageModelToolResultPart(toolCall.call.toolCallId, markdownTextForImage)
 				];
 				messages.push(message);
-				const userMessage = vscode.LanguageModelChatMessage.User('Return this image link in your response. Do you modify the markdown image link at all. The path is already absolute local file path, do not put "https" or "blob" in the link');
+				const userMessage = vscode.LanguageModelChatMessage.User('Return this image link in your response. Do not modify the markdown image link at all. The path is already absolute local file path, do not put "https" or "blob" in the link');
 				messages.push(userMessage);
 
 				return messages;

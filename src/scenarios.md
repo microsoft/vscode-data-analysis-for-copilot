@@ -33,3 +33,13 @@ TODO:
 ```
 Create visualization after runing relevant Python code
 ```
+
+## Test long conversations with housing data
+
+Send the following requests, LLM should be able to remember the context and respond to the requests accordingly.
+
+```
+@ada help me analyze housing.csv
+@ada visualize the data
+@ada try to find the correlation between housing value and location
+```

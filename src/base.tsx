@@ -154,59 +154,6 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 	}
 }
 
-export function renderPromptWithHistory(userQuery: string, references: readonly vscode.ChatPromptReference[], context: vscode.ChatContext): vscode.LanguageModelChatMessage[] {
-	const messages: vscode.LanguageModelChatMessage[] = [];
-
-	for (const turn of context.history) {
-		if (turn.participant === 'ada.data') {
-			if (turn instanceof vscode.ChatRequestTurn) {
-				const userMessage = vscode.LanguageModelChatMessage.User(turn.prompt);
-				messages.push(userMessage);
-			} else if (turn instanceof vscode.ChatResponseTurn) {
-				if (turn.result.metadata && turn.result.metadata.toolsCallCache && 1 + 1 === 2) {
-					// tool calls cacht
-					const toolsCallCache = turn.result.metadata.toolsCallCache as vscode.LanguageModelChatMessage[];
-					toolsCallCache.forEach(toolCall => {
-						if (toolCall.role === vscode.LanguageModelChatMessageRole.User) {
-							const m = vscode.LanguageModelChatMessage.User('');
-							const parts = toolCall.content2 as vscode.LanguageModelToolResultPart[];
-							m.content2 = parts.map(part => new vscode.LanguageModelToolResultPart(part.toolCallId, part.content));
-							messages.push(m);
-
-							// assistant message come after tool call
-							messages.push(
-								vscode.LanguageModelChatMessage.User(
-									`Above is the result of calling the tools. Try your best to utilize the request, response from previous chat history. Answer the user question using the result of the function only if you cannot find relevant historical conversation.`
-								)
-							);
-						} else {
-							const m = vscode.LanguageModelChatMessage.Assistant('');
-							const parts = toolCall.content2 as vscode.LanguageModelToolCallPart[];
-							m.content2 = parts.map(part => new vscode.LanguageModelToolCallPart(part.name, part.toolCallId, part.parameters));
-							messages.push(m);
-						}
-					});
-				}
-
-				const responseText = turn.response
-					.map((part) => {
-						if (part instanceof vscode.ChatResponseMarkdownPart) {
-							return part.value.value;
-						} else {
-							return '';
-						}
-					})
-					.join('');
-
-				const assistantMessage = vscode.LanguageModelChatMessage.Assistant(responseText);
-				messages.push(assistantMessage);
-			}
-		}
-	}
-
-	return messages;
-}
-
 export class UserRequestPrompt extends PromptElement<PromptProps, void> {
 	render(_state: void, _sizing: PromptSizing) {
 		const userPrompt = this.replaceReferences(this.props.userQuery, this.props.references);
