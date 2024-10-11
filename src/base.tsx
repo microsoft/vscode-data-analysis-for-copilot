@@ -64,6 +64,7 @@ export class PrefixPrompt extends PromptElement<PromptProps, void> {
 							- Give me the result of conducting these statistical analysis on the data in very detailed, quantitative manner.
 							- Be detailed and descriptive in your analysis.
 							- Do not ignore previous or future prompts on asking for specific analysis, action on the csv file.
+							- Do not show the dataframe raw data to users unless they specifically ask for it.
 						</UserMessage>
 				}
                 {csvConditionalMessage}
