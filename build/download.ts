@@ -107,24 +107,6 @@ export async function downloadPyodideArtifacts() {
 	console.debug(`Extracted to ${dir}`);
 }
 
-async function deleteUnwantedFiles(dir: string) {
-	const files = [
-		path.join(dir, 'lib'),
-		path.join(dir, 'style'),
-		path.join(dir, 'package.json'),
-		path.join(dir, 'tsconfig.tsbuildinfo')
-	];
-	files.forEach((file) => {
-		if (fs.existsSync(file)) {
-			fs.rmSync(file, { recursive: true });
-		}
-	});
-	const pypiFiles = fs.readdirSync(path.join(dir, 'pypi'));
-	pypiFiles
-		.filter((file) => file.toLowerCase().startsWith('widgetsnbextension'))
-		.forEach((file) => fs.rmSync(path.join(dir, 'pypi', file), { recursive: true }));
-}
-
 function getRequest(url: string) {
 	const token = process.env['GITHUB_TOKEN'];
 	const proxy = getProxyForUrl(getApiUrl());
