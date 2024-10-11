@@ -5,7 +5,7 @@
 import { renderPrompt } from '@vscode/prompt-tsx';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { HistoryPrompt, PrefixPrompt, UserRequestPrompt } from './base';
+import { DataAgentPrompt } from './base';
 
 const DATA_AGENT_PARTICIPANT_ID = 'ada.data';
 const MODEL_SELECTOR: vscode.LanguageModelChatSelector = {
@@ -59,34 +59,14 @@ export class DataAgent implements vscode.Disposable {
 			justification: 'Just because!'
 		};
 
-		const prefixPrompt = await renderPrompt(
-			PrefixPrompt,
+		const prompt = await renderPrompt(
+			DataAgentPrompt,
 			{ userQuery: request.prompt, references: request.references, history: chatContext.history },
 			{ modelMaxPromptTokens: chat.maxInputTokens },
 			chat
 		);
 
-		const historyMessages = await renderPrompt(
-			HistoryPrompt,
-			{ userQuery: request.prompt, references: request.references, history: chatContext.history },
-			{ modelMaxPromptTokens: chat.maxInputTokens },
-			chat
-		);
-
-		console.log('HISTORY MESSAGES', historyMessages.messages);
-
-		const userRequestPrompt = await renderPrompt(
-			UserRequestPrompt,
-			{ userQuery: request.prompt, references: request.references, history: chatContext.history },
-			{ modelMaxPromptTokens: chat.maxInputTokens },
-			chat
-		);
-
-		const messages: vscode.LanguageModelChatMessage[] = [
-			...(prefixPrompt.messages as vscode.LanguageModelChatMessage[]),
-			...(historyMessages.messages as vscode.LanguageModelChatMessage[]),
-			...(userRequestPrompt.messages as vscode.LanguageModelChatMessage[])
-		];
+		const messages: vscode.LanguageModelChatMessage[] = prompt.messages as vscode.LanguageModelChatMessage[];
 
 		const cacheMessagesForCurrentRun: vscode.LanguageModelChatMessage[] = [];
 
