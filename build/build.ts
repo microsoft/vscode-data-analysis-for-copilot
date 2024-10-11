@@ -3,7 +3,7 @@
 
 import * as path from 'path';
 import * as fs from 'fs';
-import { downloadPyodideKernel } from './download';
+import { downloadCommWheel, downloadPyodideKernel } from './download';
 
 async function renameLicense() {
     const dir = path.join(__dirname, '..', 'pyodide');
@@ -17,6 +17,8 @@ async function renameLicense() {
 
 async function main() {
     await downloadPyodideKernel();
+    await downloadCommWheel();
+
     renameLicense();
 }
 

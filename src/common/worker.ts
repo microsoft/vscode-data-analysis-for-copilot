@@ -11,7 +11,6 @@ import type { IPyodideWorkerKernel } from './tokens';
 import { SyncMessaging } from './syncMessagingWorker';
 import * as fs from 'fs';
 
-
 export class PyodideRemoteKernel {
     constructor(private readonly syncMessaging: SyncMessaging) {
         this._initialized = new Promise((resolve, reject) => {
@@ -26,11 +25,13 @@ export class PyodideRemoteKernel {
         this._options = options;
         const originalFetch = globalThis.fetch;
         globalThis.fetch = async (input: string | URL | Request, init?: RequestInit) => {
-            if (typeof input === 'string' && input.endsWith('/pypi/all.json')) {
-                const separator = options.baseUrl.includes('/') ? '/' : '\\';
-                const endsWithSeparator = options.baseUrl.endsWith('/') || options.baseUrl.endsWith('\\');
-                const contents = fs.readFileSync(`${options.baseUrl}${endsWithSeparator ? '' : separator}pypi${separator}all.json`);
-                return new Response(contents, { status: 200, statusText: 'OK' });
+            // console.error(`Fetching ${input}`);
+            if (typeof input === 'string') {
+                const url = options.pipliteUrls.find((url) => url.toLowerCase().startsWith(input.toLowerCase()));
+                if (url) {
+                    const contents = fs.readFileSync(url.substring('file://'.length));
+                    return new Response(contents, { status: 200, statusText: 'OK' });
+                }
             }
             return originalFetch(input, init);
         };
@@ -61,7 +62,7 @@ export class PyodideRemoteKernel {
             // packageCacheDir: '/Users/donjayamanne/Downloads/cache',
             fullStdLib: true,
             // ...options.loadPyodideOptions,
-            stdout(msg: string) {
+            stdout(_msg: string) {
                 // sendMessage(`Python Output >> ${msg}`);
             },
             stdin: () => {
@@ -76,7 +77,7 @@ export class PyodideRemoteKernel {
             throw new Error('Uninitialized');
         }
 
-        const { pipliteWheelUrl, disablePyPIFallback, pipliteUrls, loadPyodideOptions } = this._options;
+        const { pipliteWheelUrl, disablePyPIFallback, pipliteUrls, loadPyodideOptions, commWheelUrl } = this._options;
 
         const preloaded = (loadPyodideOptions || {}).packages || [];
 
@@ -97,6 +98,11 @@ export class PyodideRemoteKernel {
       piplite.piplite._PIPLITE_DISABLE_PYPI = ${disablePyPIFallback ? 'True' : 'False'}
       piplite.piplite._PIPLITE_URLS = ${JSON.stringify(pipliteUrls)}
     `);
+
+        await this._pyodide.runPythonAsync(`
+        import micropip
+        await micropip.install('${commWheelUrl}', keep_going=True)
+        `);
     }
 
     protected async initKernel(options: IPyodideWorkerKernel.IOptions): Promise<void> {

@@ -71,6 +71,7 @@ export abstract class BasePyodideKernel extends BaseKernel implements IKernel {
             baseUrl,
             pyodideUrl,
             indexUrl,
+            commWheelUrl: options.commWheelUrl,
             pipliteWheelUrl: options.pipliteWheelUrl || pipliteWheelUrl.default,
             pipliteUrls,
             disablePyPIFallback,
@@ -332,6 +333,12 @@ export namespace PyodideKernel {
          * The URL to fetch piplite
          */
         pipliteWheelUrl?: string;
+
+        /**
+         * The URL to fetch comm package.
+         * https://pypi.org/project/comm/
+         */
+        commWheelUrl: string;
 
         /**
          * The URLs from which to attempt PyPI API requests

@@ -34,10 +34,11 @@ export class Kernel {
             mountDrive: true,
             pipliteUrls: [`file://${joinPath(separator, pyodidePath, 'pypi', 'all.json')}`],
             pipliteWheelUrl: `file://${joinPath(separator, pyodidePath, 'pypi', 'piplite-0.4.2-py3-none-any.whl')}`,
+            commWheelUrl: `file://${joinPath(separator, pyodidePath, 'comm-0.2.2-py3-none-any.whl')}`,
             id: new Date().getTime().toString(),
             loadPyodideOptions: {
                 lockFileURL: joinPath(separator, pyodidePath, 'pyodide-lock.json'),
-                packages: []
+                packages: ['matplotlib', 'pandas']
             },
             name: 'pyodide',
             workerPath,

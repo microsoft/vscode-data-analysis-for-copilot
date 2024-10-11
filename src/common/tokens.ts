@@ -70,6 +70,12 @@ export namespace IPyodideWorkerKernel {
         pipliteWheelUrl: string;
 
         /**
+         * The URL to fetch comm package.
+         * https://pypi.org/project/comm/
+         */
+        commWheelUrl: string;
+
+        /**
          * The URLs of additional warehouse-like wheel listings.
          */
         pipliteUrls: string[];

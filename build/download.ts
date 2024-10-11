@@ -30,7 +30,7 @@ export async function downloadPyodideKernel() {
     const fileToDownload = json.assets.find((asset) =>
         asset.name.toLowerCase().startsWith('jupyterlite-pyodide-kernel-0')
     )!;
-    console.debug(`Download ${fileToDownload.url}`);
+    console.debug(`Download ${fileToDownload.name} (${fileToDownload.url})`);
     const tarFile = path.join(tmpdir(), fileToDownload.name);
     await downloadFile(fileToDownload.url, tarFile);
     console.debug(`Downloaded to ${tarFile}`);
@@ -41,6 +41,17 @@ export async function downloadPyodideKernel() {
     await extractFile(tarFile, dir);
     await deleteUnwantedFiles(dir);
     console.debug(`Extracted to ${dir}`);
+}
+
+
+export async function downloadCommWheel(){
+	const url = 'https://files.pythonhosted.org/packages/e6/75/49e5bfe642f71f272236b5b2d2691cf915a7283cc0ceda56357b61daa538/comm-0.2.2-py3-none-any.whl';
+	const dest = path.join(__dirname, '..', 'pyodide', 'comm-0.2.2-py3-none-any.whl');
+	if (fs.existsSync(dest)) {
+		// Re-use the same file.
+		return;
+	}
+	await downloadFile(url, dest);
 }
 
 async function deleteUnwantedFiles(dir: string) {
