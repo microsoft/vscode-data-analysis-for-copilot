@@ -1,3 +1,7 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation and GitHub. All rights reserved.
+ *--------------------------------------------------------------------------------------------*/
+
 import * as vscode from 'vscode';
 import { DataAgent } from './dataAgent';
 import { FindFilesTool, RunPythonTool } from './tools';

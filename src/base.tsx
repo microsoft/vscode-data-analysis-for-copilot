@@ -1,3 +1,7 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation and GitHub. All rights reserved.
+ *--------------------------------------------------------------------------------------------*/
+
 import {
 	AssistantMessage,
 	BasePromptElementProps,

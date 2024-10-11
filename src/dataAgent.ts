@@ -1,3 +1,7 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation and GitHub. All rights reserved.
+ *--------------------------------------------------------------------------------------------*/
+
 import { renderPrompt } from '@vscode/prompt-tsx';
 import * as vscode from 'vscode';
 import { HistoryPrompt, PrefixPrompt, renderPromptWithHistory, UserRequestPrompt } from './base';
