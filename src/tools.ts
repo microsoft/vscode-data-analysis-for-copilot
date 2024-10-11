@@ -82,7 +82,13 @@ export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParamet
 		}
 
 		if (result && result['application/vnd.code.notebook.error']) {
-			resultData['application/vnd.code.notebook.error'] = result['application/vnd.code.notebook.error'];
+			const error = result['application/vnd.code.notebook.error'] as Error;
+			// We need to ensure we pass back plain objects to VS Code that can be serialized..
+			resultData['application/vnd.code.notebook.error'] = {
+				name: error.name || '',
+				message: error.message || '',
+				stack: error.stack || ''
+			};
 		}
 		return resultData;
 	}
@@ -109,4 +115,3 @@ function sanitizePythonCode(code: string) {
 	}
 	return code;
 }
-

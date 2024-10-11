@@ -30,11 +30,11 @@ export class DataAgent implements vscode.Disposable {
 	}
 
 	public async handle(
-        request: vscode.ChatRequest,
-        chatContext: vscode.ChatContext,
-        stream: vscode.ChatResponseStream,
-        token: vscode.CancellationToken
-    ): Promise<vscode.ChatResult> {
+		request: vscode.ChatRequest,
+		chatContext: vscode.ChatContext,
+		stream: vscode.ChatResponseStream,
+		token: vscode.CancellationToken
+	): Promise<vscode.ChatResult> {
 		const models = await vscode.lm.selectChatModels(MODEL_SELECTOR);
 		if (!models || !models.length) {
 			console.log('NO MODELS');
@@ -65,7 +65,7 @@ export class DataAgent implements vscode.Disposable {
 			chat
 		);
 
-        const historyMessages = renderPromptWithHistory(request.prompt, request.references, chatContext);
+		const historyMessages = renderPromptWithHistory(request.prompt, request.references, chatContext);
 		const historyMessages2 = await renderPrompt(
 			HistoryPrompt,
 			{ userQuery: request.prompt, references: request.references, history: chatContext.history },
@@ -75,7 +75,7 @@ export class DataAgent implements vscode.Disposable {
 
 		console.log('HISTORY MESSAGES', historyMessages, historyMessages2.messages);
 
-        const userRequestPrompt = await renderPrompt(
+		const userRequestPrompt = await renderPrompt(
 			UserRequestPrompt,
 			{ userQuery: request.prompt, references: request.references, history: chatContext.history },
 			{ modelMaxPromptTokens: chat.maxInputTokens },
@@ -83,10 +83,10 @@ export class DataAgent implements vscode.Disposable {
 		);
 
 		const messages: vscode.LanguageModelChatMessage[] = [
-            ...(prefixPrompt.messages as vscode.LanguageModelChatMessage[]),
-            ...(historyMessages as vscode.LanguageModelChatMessage[]),
-            ...(userRequestPrompt.messages as vscode.LanguageModelChatMessage[])
-        ];
+			...(prefixPrompt.messages as vscode.LanguageModelChatMessage[]),
+			...(historyMessages as vscode.LanguageModelChatMessage[]),
+			...(userRequestPrompt.messages as vscode.LanguageModelChatMessage[])
+		];
 
 		const cacheMessagesForCurrentRun: vscode.LanguageModelChatMessage[] = [];
 
@@ -112,7 +112,7 @@ export class DataAgent implements vscode.Disposable {
 			for (const msg of messages) {
 				if (msg && msg instanceof vscode.LanguageModelChatMessage) {
 					if (msg.content2 && msg.content2[0] && msg.content2[0] instanceof vscode.LanguageModelToolResultPart && msg.content2[0].content) {
-						if (msg.content2[0].content ==='We encountered an error') {
+						if (msg.content2[0].content === 'We encountered an error') {
 							errorCount++;
 							endedWithError = true;
 						}
@@ -187,6 +187,7 @@ export class DataAgent implements vscode.Disposable {
 							toolCall.call.parameters
 						)
 				);
+				let toolErrorInserted = false
 				messages.push(assistantMsg);
 				cacheMessagesForCurrentRun.push(assistantMsg);
 				for (const toolCall of toolCalls) {
@@ -216,24 +217,15 @@ export class DataAgent implements vscode.Disposable {
 					}
 
 					if (toolResult['application/vnd.code.notebook.error']) {
-						// const message = vscode.LanguageModelChatMessage.User('');
-						// const error: Error = toolResult['application/vnd.code.notebook.error'];
-						// message.content2 = [
-						//     new vscode.LanguageModelToolResultPart(
-						//     // new vscode.LanguageModelToolResultPart(
-						//         toolCall.call.toolCallId,
-						//         `Error: ${error.message} (${error.name})\n${error.stack}`,
-						//         true
-						//     )
-						// ];
-						// messages.push(message);
-						const message = vscode.LanguageModelChatMessage.User('');
+						const error = toolResult['application/vnd.code.notebook.error'] as Error;
+						const message = vscode.LanguageModelChatMessage.User('The tool returned an error, analyze this error and attempt to resolve this.');
+						const errorContent = [error.name || '', error.message || '', error.stack || ''].filter((part) => part).join('\n');
 						message.content2 = [
-							new vscode.LanguageModelToolResultPart(toolCall.call.toolCallId, 'We encountered an error')
+							new vscode.LanguageModelToolResultPart(toolCall.call.toolCallId, `Error: ${errorContent}`)
 						];
 						messages.push(message);
 						cacheMessagesForCurrentRun.push(message);
-
+						toolErrorInserted = true
 						toolResultInserted = true;
 					}
 
@@ -246,12 +238,13 @@ export class DataAgent implements vscode.Disposable {
 				// IMPORTANT The prompt must end with a USER message (with no tool call)
 				messages.push(
 					vscode.LanguageModelChatMessage.User(
-						`If you encountered error or fail three times after calling the tool, just present the code to the user.
+						`${toolErrorInserted ? 'If you fail three times after calling the tool, just present the code to the user.' : ''}
 						Above is the result of calling the functions ${toolCalls
 							.map((call) => call.tool.id)
 							.join(
 								', '
-							)}. Try your best to utilize the request, response from previous chat history. Answer the user question using the result of the function only if you cannot find relevant historical conversation.`
+							)
+						}. Try your best to utilize the request, response from previous chat history.Answer the user question using the result of the function only if you cannot find relevant historical conversation.`
 					)
 				);
 
