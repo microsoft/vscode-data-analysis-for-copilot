@@ -22,6 +22,12 @@ Try with #file and also with mentioning your_dataset.csv like the very first exa
 @ada maybe correlation analysis
 ```
 
+```
+// https://www.kaggle.com/datasets/dreb87/jamesbond
+// Change the column names and retry a few times (i.e. ensure LLM isn't guessing the column names)
+@ada display a histogram of movies per bond actor from jamesbond.csv file
+```
+
 
 TODO:
 ```
