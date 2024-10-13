@@ -48,7 +48,7 @@ export class DataAgent implements vscode.Disposable {
 
 		const allTools = vscode.lm.tools.map((tool): vscode.LanguageModelChatTool => {
 			return {
-				name: tool.id,
+				name: tool.name,
 				description: tool.description,
 				parametersSchema: tool.parametersSchema ?? {}
 			};
@@ -112,48 +112,39 @@ export class DataAgent implements vscode.Disposable {
 			const response = await chat.sendRequest(messages, options, token);
 
 			if (response.stream) {
-				for await (const part of response.stream) {
-					if (part instanceof vscode.LanguageModelTextPart) {
-						stream.markdown(part.value);
-					} else if (part instanceof vscode.LanguageModelToolCallPart) {
-						const tool = vscode.lm.tools.find((tool) => tool.id === part.name);
-						if (!tool) {
-							// BAD tool choice?
-							stream.progress(`Unknown function: ${part.name}`);
-							continue;
-						}
-
-						try {
-							JSON.parse(part.parameters);
-						} catch (err) {
-							console.error(part.parameters);
-							if (part.parameters && typeof part.parameters === 'string') {
-								part.parameters = JSON.stringify({ code: part.parameters });
-							} else {
-								throw new Error(
-									`Got invalid tool use parameters: "${part.parameters}". (${(err as Error).message})`
-								);
+				try {
+					for await (const part of response.stream) {
+						if (part instanceof vscode.LanguageModelTextPart) {
+							stream.markdown(part.value);
+						} else if (part instanceof vscode.LanguageModelToolCallPart) {
+							const tool = vscode.lm.tools.find((tool) => tool.name === part.name);
+							if (!tool) {
+								// BAD tool choice?
+								stream.progress(`Unknown function: ${part.name}`);
+								continue;
 							}
-						}
 
-						toolCalls.push({
-							call: part,
-							result: vscode.lm.invokeTool(
-								tool.id,
-								{
-									parameters: JSON.parse(part.parameters),
-									toolInvocationToken: request.toolInvocationToken,
-									requestedContentTypes: [
-										'text/plain',
-										'image/png',
-										'application/vnd.code.notebook.error'
-									]
-								},
-								token
-							),
-							tool
-						});
+							toolCalls.push({
+								call: part,
+								result: vscode.lm.invokeTool(
+									tool.name,
+									{
+										parameters: part.parameters,
+										toolInvocationToken: request.toolInvocationToken,
+										requestedContentTypes: [
+											'text/plain',
+											'image/png',
+											'application/vnd.code.notebook.error'
+										]
+									},
+									token
+								),
+								tool
+							});
+						}
 					}
+				} catch (ex) {
+					console.log('Error in response stream', ex);
 				}
 			}
 
@@ -162,7 +153,7 @@ export class DataAgent implements vscode.Disposable {
 				assistantMsg.content2 = toolCalls.map(
 					(toolCall) =>
 						new vscode.LanguageModelToolCallPart(
-							toolCall.tool.id,
+							toolCall.tool.name,
 							toolCall.call.toolCallId,
 							toolCall.call.parameters
 						)
@@ -216,7 +207,7 @@ export class DataAgent implements vscode.Disposable {
 					vscode.LanguageModelChatMessage.User(
 						`${toolErrorInserted ? 'If you fail three times after calling the tool, just present the code to the user.' : ''}
 						Above is the result of calling the functions ${toolCalls
-							.map((call) => call.tool.id)
+							.map((call) => call.tool.name)
 							.join(
 								', '
 							)
@@ -240,9 +231,9 @@ export class DataAgent implements vscode.Disposable {
 
 		const message = vscode.LanguageModelChatMessage.User('');
 		if (this.extensionContext.storageUri) {
-			const imagePath = await this._saveImage(this.extensionContext.storageUri, toolCall.tool.id, Buffer.from(toolResult['image/png'], 'base64'));
+			const imagePath = await this._saveImage(this.extensionContext.storageUri, toolCall.tool.name, Buffer.from(toolResult['image/png'], 'base64'));
 			if (imagePath) {
-				const markdownTextForImage = `The image generated from the code is ![${toolCall.tool.id} result](${imagePath}). You can give this markdown link to users!`;
+				const markdownTextForImage = `The image generated from the code is ![${toolCall.tool.name} result](${imagePath}). You can give this markdown link to users!`;
 				message.content2 = [
 					new vscode.LanguageModelToolResultPart(toolCall.call.toolCallId, markdownTextForImage)
 				];
@@ -254,7 +245,7 @@ export class DataAgent implements vscode.Disposable {
 			}
 		}
 
-		const markdownTextForImage = `![${toolCall.tool.id} result](data:image/png;base64,${toolResult['image/png']})`;
+		const markdownTextForImage = `![${toolCall.tool.name} result](data:image/png;base64,${toolResult['image/png']})`;
 		message.content2 = [
 			new vscode.LanguageModelToolResultPart(toolCall.call.toolCallId, markdownTextForImage)
 		];

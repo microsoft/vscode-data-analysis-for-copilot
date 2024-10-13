@@ -91,7 +91,7 @@
         "compile-extension": "esbuild ./src/extension.ts --bundle --external:vscode --outfile=out/extension.js --sourcemap --format=cjs --platform=node --target=node18",
         "watch-extension": "npm run compile-extension -- --watch",
         "watch": "npm run watch-extension",
-        "download-api": "dts main",
+        "download-api": "dts dev",
         "clean": "npx tsx build/clean.ts",
         "lint": "eslint src",
         "lint-fix": "eslint --fix src",
