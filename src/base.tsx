@@ -15,7 +15,6 @@ import {
 import { Chunk, TextChunk, ToolCall, ToolMessage } from '@vscode/prompt-tsx/dist/base/promptElements';
 import * as path from 'path';
 import * as vscode from "vscode";
-import { getToolName } from './common';
 
 export interface ToolCallRound {
 	toolCalls: vscode.LanguageModelToolCallPart[];
@@ -197,7 +196,7 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 	}
 
 	private async _renderOneToolCall(toolCall: vscode.LanguageModelToolCallPart, sizing: PromptSizing, toolInvocationToken: vscode.ChatParticipantToolToken | undefined): Promise<{ piece: PromptPiece; hasError: boolean }> {
-		const tool = vscode.lm.tools.find((tool) => getToolName(tool) === toolCall.name);
+		const tool = vscode.lm.tools.find((tool) => tool.name === toolCall.name);
 		if (!tool) {
 			console.error(`Tool not found: ${toolCall.name}`);
 			return {
@@ -250,7 +249,7 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 		const parameters = typeof toolCall.parameters === 'string' ? JSON.parse(toolCall.parameters) as Record<string, unknown> : toolCall.parameters;
 
 		const toolResult = await vscode.lm.invokeTool(
-			getToolName(tool),
+			tool.name,
 			{
 				parameters: parameters,
 				toolInvocationToken: toolInvocationToken,

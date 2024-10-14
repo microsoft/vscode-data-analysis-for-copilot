@@ -5,7 +5,6 @@
 import { renderPrompt } from '@vscode/prompt-tsx';
 import * as vscode from 'vscode';
 import { DataAgentPrompt, ToolCallRound, ToolResultMetadata, TsxToolUserMetadata } from './base';
-import { getToolName } from './common';
 
 const DATA_AGENT_PARTICIPANT_ID = 'ada.data';
 const MODEL_SELECTOR: vscode.LanguageModelChatSelector = {
@@ -47,7 +46,7 @@ export class DataAgent implements vscode.Disposable {
 
 		const allTools = vscode.lm.tools.map((tool): vscode.LanguageModelChatTool => {
 			return {
-				name: getToolName(tool),
+				name: tool.name,
 				description: tool.description,
 				parametersSchema: tool.parametersSchema ?? {}
 			};
@@ -116,7 +115,7 @@ export class DataAgent implements vscode.Disposable {
 					if (part instanceof vscode.LanguageModelTextPart) {
 						stream.markdown(part.value);
 					} else if (part instanceof vscode.LanguageModelToolCallPart) {
-						const tool = vscode.lm.tools.find((tool) => (getToolName(tool) === part.name));
+						const tool = vscode.lm.tools.find((tool) => (tool.name === part.name));
 						if (!tool) {
 							// BAD tool choice?
 							stream.progress(`Unknown function: ${part.name}`);
