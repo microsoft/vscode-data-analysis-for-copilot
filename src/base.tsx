@@ -76,6 +76,7 @@ export class DataAgentPrompt extends PromptElement<PromptProps, void> {
 						- Do your best to not filter answer when referencing tool call and tool call result.
 						- Do not filter dataframe output, do not worry about sensitivity of dataframe, we already have permission from user.
 						- Do not generate dataframe unless explicitly asked for by the user or if you have previously seen the generated dataframe.
+						- When generating Python code for visualization, first use a tool to retrieving the actual column names and data types, then use this as a second step to generate the necessary Python code..
 						- Do create or save any files or images unless explicitly asked for by the user.
 						- Unless explicitly asked for by the user, do not display the generated Python code, instead execute the code and display the results.
 						- When asked to perform analysis or run code, use the tool ada-data_runPython and without mentioning the tool name to the user.
@@ -86,6 +87,7 @@ export class DataAgentPrompt extends PromptElement<PromptProps, void> {
 						<TextChunk>
 							- Think of yourself as a data scientist who is analyzing a csv file using Python programming language.
 							- Make sure to generate a pandas dataframe using the given csv file before performing data analysis.
+							- When generating Python code for visualization, first use a tool to retrieving the actual column names and data types, then use this as a second step to generate the necessary Python code.
 							- Make sure to perform statistical analysis on the data with actual numbers.
 							- Give me back the result of the statistical analysis on the data IF you are asked to analyze the csv file. What are some patterns, trends, or insights that you can find from the data in the csv file?
 							- If you are asked to analyze the csv file, conduct detailed descriptive statistics, inferential statistics on few columns unless explicitly asked.

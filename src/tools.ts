@@ -54,6 +54,7 @@ interface IRunPythonParameters {
 
 export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParameters> {
 	private _kernel: Kernel;
+	private pendingRequests: Promise<unknown> = Promise.resolve();
 	constructor(context: vscode.ExtensionContext) {
 		const pyodidePath = vscode.Uri.joinPath(context.extensionUri, 'pyodide');
 		const kernelPath = vscode.Uri.joinPath(pyodidePath, 'node', 'index.js').fsPath;
@@ -69,7 +70,8 @@ export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParamet
 		_token: vscode.CancellationToken
 	) {
 		const code = sanitizePythonCode(options.parameters.code);
-		const result = await this._kernel.execute(code);
+		this.pendingRequests = this.pendingRequests.finally().then(() => this._kernel.execute(code));
+		const result = await this.pendingRequests as Awaited<ReturnType<typeof Kernel.prototype.execute>>;
 
 		console.log(result);
 		const resultData: { [key: string]: unknown } = {};
