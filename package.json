@@ -71,6 +71,10 @@
                         "code": {
                             "type": "string",
                             "description": "The Python code to run"
+                        },
+                        "reason": {
+                            "type": "string",
+                            "description": "The reason for running the code"
                         }
                     },
                     "required": [

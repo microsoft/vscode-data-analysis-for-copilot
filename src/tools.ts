@@ -50,6 +50,7 @@ export class FindFilesTool implements vscode.LanguageModelTool<IFindFilesParamet
 
 interface IRunPythonParameters {
 	code: string;
+	reason: string;
 }
 
 export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParameters> {
@@ -96,11 +97,11 @@ export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParamet
 	}
 
 	async prepareToolInvocation(
-		_options: vscode.LanguageModelToolInvocationPrepareOptions<IRunPythonParameters>,
+		options: vscode.LanguageModelToolInvocationPrepareOptions<IRunPythonParameters>,
 		_token: vscode.CancellationToken
 	) {
 		return {
-			invocationMessage: `Executing Python Code`
+			invocationMessage: `Executing Code: "${options.parameters.reason}"`
 		};
 	}
 }
