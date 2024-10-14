@@ -54,7 +54,7 @@ export class DataAgent implements vscode.Disposable {
 
 		const options: vscode.LanguageModelChatRequestOptions = {
 			tools: allTools,
-			justification: 'Just because!'
+			justification: 'Analyzing data to provide insights and recommendations.'
 		};
 
 		const prompt = await renderPrompt(
