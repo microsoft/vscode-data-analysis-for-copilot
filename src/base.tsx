@@ -7,50 +7,36 @@ import {
 	BasePromptElementProps,
 	PrioritizedList,
 	PromptElement,
+	PromptMetadata,
+	PromptPiece,
 	PromptSizing,
 	UserMessage
 } from '@vscode/prompt-tsx';
-import { TextChunk, ToolCall, ToolMessage } from '@vscode/prompt-tsx/dist/base/promptElements';
+import { Chunk, TextChunk, ToolCall, ToolMessage } from '@vscode/prompt-tsx/dist/base/promptElements';
+import * as path from 'path';
 import * as vscode from "vscode";
+import { getToolName } from './common';
+
+export interface ToolCallRound {
+	toolCalls: vscode.LanguageModelToolCallPart[];
+}
+
+export interface ToolCallsMetadata {
+    toolCallRounds: ToolCallRound[];
+    toolCallResults: Record<string, vscode.LanguageModelToolResult>;
+}
+
+export interface TsxToolUserMetadata {
+    toolCallsMetadata: ToolCallsMetadata;
+}
 
 export interface PromptProps extends BasePromptElementProps {
 	userQuery: string;
 	references: readonly vscode.ChatPromptReference[];
 	history: ReadonlyArray<vscode.ChatRequestTurn | vscode.ChatResponseTurn>;
-}
-
-export interface ToolCallsProps extends BasePromptElementProps {
-	toolCalls: vscode.LanguageModelChatMessage[];
-}
-
-class ToolCalls extends PromptElement<ToolCallsProps, void> {
-	async render(_state: void, _sizing: PromptSizing) {
-		if (!this.props.toolCalls.length) {
-			return <></>;
-		}
-
-		return <>
-			{
-				this.props.toolCalls.map(toolCall => this.renderOneToolCallRound(toolCall))
-			}
-		</>
-	}
-
-	private renderOneToolCallRound(toolCall: vscode.LanguageModelChatMessage) {
-		if (toolCall.role === vscode.LanguageModelChatMessageRole.User) {
-			const parts = toolCall.content2 as vscode.LanguageModelToolResultPart[];
-
-			return <>
-				{parts.map(part => <ToolMessage toolCallId={part.toolCallId}>{part.content}</ToolMessage>)}
-				<UserMessage>Above is the result of calling the tools. Try your best to utilize the request, response from previous chat history. Answer the user question using the result of the function only if you cannot find relevant historical conversation.</UserMessage>
-			</>
-		} else {
-			const parts = toolCall.content2 as vscode.LanguageModelToolCallPart[];
-			const assistantToolCalls: ToolCall[] = parts.map(tc => ({ type: 'function', function: { name: tc.name, arguments: JSON.stringify(tc.parameters) }, id: tc.toolCallId }));
-			// const message = `Run tool call ${assistantToolCalls.map(tc => tc.function.name).join(', ')}`;
-			return <AssistantMessage toolCalls={assistantToolCalls}></AssistantMessage>
-		}
-	}
+	currentToolCallRounds: ToolCallRound[];
+	toolInvocationToken: vscode.ChatParticipantToolToken | undefined;
+	extensionContext: vscode.ExtensionContext;
 }
 
 export class DataAgentPrompt extends PromptElement<PromptProps, void> {
@@ -125,7 +111,7 @@ export class DataAgentPrompt extends PromptElement<PromptProps, void> {
 							} else {
 								return (
 									<>
-										{turn.result.metadata?.toolsCallCache && <ToolCalls toolCalls={turn.result.metadata.toolsCallCache} />}
+										{turn.result.metadata?.toolCallsMetadata && <ToolCalls toolCallRounds={turn.result.metadata.toolCallsMetadata.toolCallRounds} toolInvocationToken={this.props.toolInvocationToken} extensionContext={this.props.extensionContext} toolCallResults={turn.result.metadata.toolCallsMetadata.toolCallResults }/>}
 										{this.renderChatResponseTurn(turn)}
 									</>
 								);
@@ -134,6 +120,7 @@ export class DataAgentPrompt extends PromptElement<PromptProps, void> {
 					}
 				</PrioritizedList>
 				<UserMessage priority={1000}>{userPrompt}</UserMessage>
+				<ToolCalls toolCallRounds={this.props.currentToolCallRounds} priority={1000} toolInvocationToken={this.props.toolInvocationToken} extensionContext={this.props.extensionContext} toolCallResults={{}} ></ToolCalls>
 			</>
 		)
 	}
@@ -165,5 +152,171 @@ export class DataAgentPrompt extends PromptElement<PromptProps, void> {
 			.join('');
 
 		return <AssistantMessage>{responseText}</AssistantMessage>;
+	}
+}
+
+interface ToolCallsProps extends BasePromptElementProps {
+	toolCallRounds: ToolCallRound[];
+	toolInvocationToken: vscode.ChatParticipantToolToken | undefined;
+	extensionContext: vscode.ExtensionContext;
+    toolCallResults: Record<string, vscode.LanguageModelToolResult>;
+}
+
+class ToolCalls extends PromptElement<ToolCallsProps, void> {
+	async render(state: void, sizing: PromptSizing) {
+		if (!this.props.toolCallRounds.length) {
+			return undefined;
+		}
+
+		const toolCallPieces = await Promise.all(this.props.toolCallRounds.map(round => this._renderOneRound(round, sizing, this.props.toolInvocationToken)));
+
+		return <>
+				{toolCallPieces}
+		</>
+	}
+
+	private async _renderOneRound(round: ToolCallRound, sizing: PromptSizing, toolInvocationToken: vscode.ChatParticipantToolToken | undefined): Promise<PromptPiece> {
+		const assistantToolCalls: ToolCall[] = round.toolCalls.map(tc => ({ type: 'function', function: { name: tc.name, arguments: JSON.stringify(tc.parameters) }, id: tc.toolCallId }));
+
+		const toolCallIds = round.toolCalls
+			.map((call) => call.name)
+			.join(', ');
+		const toolCallPieces = await Promise.all(round.toolCalls.map(tc => this._renderOneToolCall(tc, sizing, toolInvocationToken)));
+		const hasError = toolCallPieces.some(p => p.hasError);
+		const promptPieces = toolCallPieces.map(p => p.piece);
+		return <Chunk>
+			<AssistantMessage toolCalls={assistantToolCalls}></AssistantMessage>
+			{promptPieces}
+			<UserMessage>
+				{hasError && <TextChunk>If you fail three times after calling the tool, just present the code to the user.</TextChunk>}
+				<TextChunk>Above is the result of calling the functions {toolCallIds}. Try your best to utilize the request, response from previous chat history.Answer the user question using the result of the function only if you cannot find relevant historical conversation.</TextChunk>
+			</UserMessage>
+		</Chunk>;
+	}
+
+	private async _renderOneToolCall(toolCall: vscode.LanguageModelToolCallPart, sizing: PromptSizing, toolInvocationToken: vscode.ChatParticipantToolToken | undefined): Promise<{ piece: PromptPiece; hasError: boolean }> {
+		const tool = vscode.lm.tools.find((tool) => getToolName(tool) === toolCall.name);
+		if (!tool) {
+			console.error(`Tool not found: ${toolCall.name}`);
+			return {
+				piece: <ToolMessage toolCallId={toolCall.toolCallId}>Tool not found</ToolMessage>,
+				hasError: true
+			};
+		}
+
+		const toolResult = this.props.toolCallResults[toolCall.toolCallId] || await this._getToolCallResult(tool, toolCall, toolInvocationToken);
+
+		if (toolResult['text/plain']) {
+			const text = toolResult['text/plain'];
+
+			return {
+				piece:
+					<ToolMessage toolCallId={toolCall.toolCallId}>
+						<meta value={new ToolResultMetadata(toolCall.toolCallId, toolResult)}></meta>
+					{text}
+				</ToolMessage>,
+				hasError: false
+			};
+		} else if (toolResult['image/png']) {
+			return {
+				piece: await this._processImageOutput(toolCall.name, toolCall.toolCallId, toolResult),
+				hasError: false
+			}
+		} else if (toolResult['application/vnd.code.notebook.error']) {
+			const error = toolResult['application/vnd.code.notebook.error'] as Error;
+			const errorContent = [error.name || '', error.message || '', error.stack || ''].filter((part) => part).join('\n');
+			const errorMessage = `The tool returned an error, analyze this error and attempt to resolve this. Error: ${errorContent}`;
+
+			return {
+				piece:
+					<ToolMessage toolCallId={toolCall.toolCallId}>
+						<meta value={new ToolResultMetadata(toolCall.toolCallId, toolResult)}></meta>
+						<TextChunk>{errorMessage}</TextChunk>
+					</ToolMessage>,
+				hasError: true
+			}
+		}
+
+		return {
+			piece: <></>,
+			hasError: false
+		};
+	}
+
+	private async _getToolCallResult(tool: vscode.LanguageModelToolDescription, toolCall: vscode.LanguageModelToolCallPart, toolInvocationToken: vscode.ChatParticipantToolToken | undefined) {
+		const token = new vscode.CancellationTokenSource().token;
+		const parameters = typeof toolCall.parameters === 'string' ? JSON.parse(toolCall.parameters) as Record<string, unknown> : toolCall.parameters;
+
+		const toolResult = await vscode.lm.invokeTool(
+			getToolName(tool),
+			{
+				parameters: parameters,
+				toolInvocationToken: toolInvocationToken,
+				requestedContentTypes: [
+					'text/plain',
+					'image/png',
+					'application/vnd.code.notebook.error'
+				]
+			},
+			token
+		);
+
+		return toolResult;
+	}
+
+	private async _processImageOutput(toolCallName: string, toolCallId: string, toolResult: vscode.LanguageModelToolResult) {
+		if (this.props.extensionContext.storageUri) {
+			const imagePath = await this._saveImage(this.props.extensionContext.storageUri, toolCallName, Buffer.from(toolResult['image/png'], 'base64'));
+			if (imagePath) {
+				const markdownTextForImage = `The image generated from the code is ![${toolCallName} result](${imagePath}). You can give this markdown link to users!`;
+
+				return <>
+					<ToolMessage toolCallId={toolCallId}>
+						<meta value={new ToolResultMetadata(toolCallId, toolResult)}></meta>
+						{markdownTextForImage}
+					</ToolMessage>
+					<UserMessage>Return this image link in your response. Do not modify the markdown image link at all. The path is already absolute local file path, do not put "https" or "blob" in the link'</UserMessage>
+				</>
+			}
+		}
+
+		const markdownTextForImage = `![${toolCallName} result](data:image/png;base64,${toolResult['image/png']})`;
+
+		return <>
+			<ToolMessage toolCallId={toolCallId}>
+				<meta value={new ToolResultMetadata(toolCallId, toolResult)}></meta>
+				{markdownTextForImage}
+			</ToolMessage>
+			<UserMessage>Return this image link in your response. Do not modify the markdown image link at all. The path is already absolute local file path, do not put "https" or "blob" in the link'</UserMessage>
+		</>;
+	}
+
+	private async _saveImage(storageUri: vscode.Uri, tool: string, imageBuffer: Buffer): Promise<string | undefined> {
+		try {
+			await vscode.workspace.fs.stat(storageUri);
+		} catch {
+			await vscode.workspace.fs.createDirectory(storageUri);
+		}
+
+		const storagePath = storageUri.fsPath;
+		const imagePath = path.join(storagePath, `result-${tool}-${Date.now()}.png`);
+		const imageUri = vscode.Uri.file(imagePath);
+		try {
+			await vscode.workspace.fs.writeFile(imageUri, imageBuffer);
+			const encodedPath = encodeURI(imageUri.fsPath);
+			return encodedPath;
+		} catch (ex) {
+			console.error('Error saving image', ex);
+			return undefined;
+		}
+	}
+}
+
+export class ToolResultMetadata extends PromptMetadata {
+	constructor(
+		public toolCallId: string,
+		public result: vscode.LanguageModelToolResult
+	) {
+		super();
 	}
 }

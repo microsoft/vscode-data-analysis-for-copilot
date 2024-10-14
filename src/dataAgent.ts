@@ -3,9 +3,9 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { renderPrompt } from '@vscode/prompt-tsx';
-import * as path from 'path';
 import * as vscode from 'vscode';
-import { DataAgentPrompt } from './base';
+import { DataAgentPrompt, ToolCallRound, ToolResultMetadata, TsxToolUserMetadata } from './base';
+import { getToolName } from './common';
 
 const DATA_AGENT_PARTICIPANT_ID = 'ada.data';
 const MODEL_SELECTOR: vscode.LanguageModelChatSelector = {
@@ -16,7 +16,6 @@ const MODEL_SELECTOR: vscode.LanguageModelChatSelector = {
 interface IToolCall {
 	tool: vscode.LanguageModelToolDescription;
 	call: vscode.LanguageModelToolCallPart;
-	result: Thenable<vscode.LanguageModelToolResult>;
 }
 
 export class DataAgent implements vscode.Disposable {
@@ -48,7 +47,7 @@ export class DataAgent implements vscode.Disposable {
 
 		const allTools = vscode.lm.tools.map((tool): vscode.LanguageModelChatTool => {
 			return {
-				name: tool.name,
+				name: getToolName(tool),
 				description: tool.description,
 				parametersSchema: tool.parametersSchema ?? {}
 			};
@@ -61,24 +60,25 @@ export class DataAgent implements vscode.Disposable {
 
 		const prompt = await renderPrompt(
 			DataAgentPrompt,
-			{ userQuery: request.prompt, references: request.references, history: chatContext.history },
+			{ userQuery: request.prompt, references: request.references, history: chatContext.history, currentToolCallRounds: [], toolInvocationToken: request.toolInvocationToken, extensionContext: this.extensionContext },
 			{ modelMaxPromptTokens: chat.maxInputTokens },
 			chat
 		);
 
-		const messages: vscode.LanguageModelChatMessage[] = prompt.messages as vscode.LanguageModelChatMessage[];
-
-		const cacheMessagesForCurrentRun: vscode.LanguageModelChatMessage[] = [];
+		let messages: vscode.LanguageModelChatMessage[] = prompt.messages as vscode.LanguageModelChatMessage[];
 
 		const toolReferences = [...request.toolReferences];
 		let errorCount = 0;
 		let endedWithError = false;
 
+		const accumulatedToolResults: Record<string, vscode.LanguageModelToolResult> = {};
+		const toolCallRounds: ToolCallRound[] = [];
+
 		const runWithFunctions = async (): Promise<void> => {
 			const requestedTool = toolReferences.shift();
 			if (requestedTool) {
 				options.toolChoice = requestedTool.id;
-				options.tools = allTools.filter((tool) => tool.name === requestedTool.id);
+				options.tools = allTools.filter((tool) => (tool.name === requestedTool.id));
 			} else {
 				options.toolChoice = undefined;
 				options.tools = allTools;
@@ -117,7 +117,7 @@ export class DataAgent implements vscode.Disposable {
 						if (part instanceof vscode.LanguageModelTextPart) {
 							stream.markdown(part.value);
 						} else if (part instanceof vscode.LanguageModelToolCallPart) {
-							const tool = vscode.lm.tools.find((tool) => tool.name === part.name);
+							const tool = vscode.lm.tools.find((tool) => (getToolName(tool) === part.name));
 							if (!tool) {
 								// BAD tool choice?
 								stream.progress(`Unknown function: ${part.name}`);
@@ -126,19 +126,6 @@ export class DataAgent implements vscode.Disposable {
 
 							toolCalls.push({
 								call: part,
-								result: vscode.lm.invokeTool(
-									tool.name,
-									{
-										parameters: part.parameters,
-										toolInvocationToken: request.toolInvocationToken,
-										requestedContentTypes: [
-											'text/plain',
-											'image/png',
-											'application/vnd.code.notebook.error'
-										]
-									},
-									token
-								),
 								tool
 							});
 						}
@@ -149,128 +136,41 @@ export class DataAgent implements vscode.Disposable {
 			}
 
 			if (toolCalls.length) {
-				const assistantMsg = vscode.LanguageModelChatMessage.Assistant('');
-				assistantMsg.content2 = toolCalls.map(
-					(toolCall) =>
-						new vscode.LanguageModelToolCallPart(
-							toolCall.tool.name,
-							toolCall.call.toolCallId,
-							toolCall.call.parameters
-						)
-				);
-				let toolErrorInserted = false
-				messages.push(assistantMsg);
-				cacheMessagesForCurrentRun.push(assistantMsg);
-				for (const toolCall of toolCalls) {
-					// NOTE that the result of calling a function is a special content type of a USER-messag
-					const toolResult = await toolCall.result;
-					let toolResultInserted = false;
+				const currentRound = {
+					toolCalls: toolCalls.map(tc => tc.call),
+					response: new Map()
+				};
+				toolCallRounds.push(currentRound);
 
-					if (toolResult['text/plain']) {
-						const message = vscode.LanguageModelChatMessage.User('');
-						message.content2 = [
-							new vscode.LanguageModelToolResultPart(toolCall.call.toolCallId, toolResult['text/plain']!)
-						];
-						messages.push(message);
-						cacheMessagesForCurrentRun.push(message);
-						toolResultInserted = true;
-					}
+				const result = (await renderPrompt(
+					DataAgentPrompt,
+					{ userQuery: request.prompt, references: request.references, history: chatContext.history, currentToolCallRounds: toolCallRounds, toolInvocationToken: request.toolInvocationToken, extensionContext: this.extensionContext },
+					{ modelMaxPromptTokens: chat.maxInputTokens },
+					chat
+				));
 
-					if (toolResult['image/png']) {
-						const imageMessages = await this._processImageOutput(toolCall, toolResult);
-						messages.push(...imageMessages);
-						cacheMessagesForCurrentRun.push(...imageMessages);
-						toolResultInserted = true;
-					}
-
-					if (toolResult['application/vnd.code.notebook.error']) {
-						const error = toolResult['application/vnd.code.notebook.error'] as Error;
-						const message = vscode.LanguageModelChatMessage.User('The tool returned an error, analyze this error and attempt to resolve this.');
-						const errorContent = [error.name || '', error.message || '', error.stack || ''].filter((part) => part).join('\n');
-						message.content2 = [
-							new vscode.LanguageModelToolResultPart(toolCall.call.toolCallId, `Error: ${errorContent}`)
-						];
-						messages.push(message);
-						cacheMessagesForCurrentRun.push(message);
-						toolErrorInserted = true
-						toolResultInserted = true;
-					}
-
-					if (!toolResultInserted) {
-						// we need to debug
-						console.log(toolResult);
-					}
+				messages = result.messages;
+				const toolResultMetadata = result.metadatas.getAll(ToolResultMetadata)
+				if (toolResultMetadata?.length) {
+					toolResultMetadata.forEach(meta => {
+						currentRound.response.set(meta.toolCallId, meta.result);
+						accumulatedToolResults[meta.toolCallId] = meta.result;
+					});
 				}
 
-				// IMPORTANT The prompt must end with a USER message (with no tool call)
-				messages.push(
-					vscode.LanguageModelChatMessage.User(
-						`${toolErrorInserted ? 'If you fail three times after calling the tool, just present the code to the user.' : ''}
-						Above is the result of calling the functions ${toolCalls
-							.map((call) => call.tool.name)
-							.join(
-								', '
-							)
-						}. Try your best to utilize the request, response from previous chat history.Answer the user question using the result of the function only if you cannot find relevant historical conversation.`
-					)
-				);
-
-				// RE-enter
 				return runWithFunctions();
 			}
 		};
 
 		await runWithFunctions();
 
-		// stream.markdown(fragment);
-		return { metadata: { toolsCallCache: cacheMessagesForCurrentRun } };
-	}
-
-	private async _processImageOutput(toolCall: IToolCall, toolResult: vscode.LanguageModelToolResult): Promise<vscode.LanguageModelChatMessage[]> {
-		const messages: vscode.LanguageModelChatMessage[] = [];
-
-		const message = vscode.LanguageModelChatMessage.User('');
-		if (this.extensionContext.storageUri) {
-			const imagePath = await this._saveImage(this.extensionContext.storageUri, toolCall.tool.name, Buffer.from(toolResult['image/png'], 'base64'));
-			if (imagePath) {
-				const markdownTextForImage = `The image generated from the code is ![${toolCall.tool.name} result](${imagePath}). You can give this markdown link to users!`;
-				message.content2 = [
-					new vscode.LanguageModelToolResultPart(toolCall.call.toolCallId, markdownTextForImage)
-				];
-				messages.push(message);
-				const userMessage = vscode.LanguageModelChatMessage.User('Return this image link in your response. Do not modify the markdown image link at all. The path is already absolute local file path, do not put "https" or "blob" in the link');
-				messages.push(userMessage);
-
-				return messages;
-			}
-		}
-
-		const markdownTextForImage = `![${toolCall.tool.name} result](data:image/png;base64,${toolResult['image/png']})`;
-		message.content2 = [
-			new vscode.LanguageModelToolResultPart(toolCall.call.toolCallId, markdownTextForImage)
-		];
-		messages.push(message);
-
-		return messages;
-	}
-
-	private async _saveImage(storageUri: vscode.Uri, tool: string, imageBuffer: Buffer): Promise<string | undefined> {
-		try {
-			await vscode.workspace.fs.stat(storageUri);
-		} catch {
-			await vscode.workspace.fs.createDirectory(storageUri);
-		}
-
-		const storagePath = storageUri.fsPath;
-		const imagePath = path.join(storagePath, `result-${tool}-${Date.now()}.png`);
-		const imageUri = vscode.Uri.file(imagePath);
-		try {
-			await vscode.workspace.fs.writeFile(imageUri, imageBuffer);
-			const encodedPath = encodeURI(imageUri.fsPath);
-			return encodedPath;
-		} catch (ex) {
-			console.error('Error saving image', ex);
-			return undefined;
+		return {
+			metadata: {
+				toolCallsMetadata: {
+					toolCallResults: accumulatedToolResults,
+					toolCallRounds
+				}
+			} satisfies TsxToolUserMetadata
 		}
 	}
 }

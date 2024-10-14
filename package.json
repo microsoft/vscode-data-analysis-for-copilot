@@ -107,7 +107,7 @@
         "@types/proxy-from-env": "^1.0.4",
         "@typescript-eslint/eslint-plugin": "^8.8.1",
         "@typescript-eslint/parser": "^8.8.1",
-        "@vscode/dts": "^0.4.0",
+        "@vscode/dts": "^0.4.1",
         "cli-progress": "^3.12.0",
         "decompress": "^4.2.1",
         "decompress-tarbz2": "^4.1.1",
