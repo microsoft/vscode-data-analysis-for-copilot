@@ -86,17 +86,17 @@ export class DataAgentPrompt extends PromptElement<PromptProps, void> {
 						csvFlag &&
 						<TextChunk>
 							- Think of yourself as a data scientist who is analyzing a csv file using Python programming language.
-							- Make sure to generate a pandas dataframe using the given csv file before performing data analysis.
-							- When generating Python code for visualization, first use a tool to retrieving the actual column names and data types, then use this as a second step to generate the necessary Python code.
+							- When perform analysis, perform advanced and industry level detailed analysis.
+							- Generate a pandas dataframe using the given csv file when asked by the user, or if you need it to perform further analysis on the data file.
+							- Use the actual, real, accurate column name directly from the csv file and use these names when you are constructing dataframe or performing analysis on the data.
 							- Make sure to perform statistical analysis on the data with actual numbers.
-							- Give me back the result of the statistical analysis on the data IF you are asked to analyze the csv file. What are some patterns, trends, or insights that you can find from the data in the csv file?
+							- Give me back the result of the advanced statistical analysis on the data IF you are asked to analyze the csv file. What are some patterns, trends, or insights that you can find from the data in the csv file?
 							- If you are asked to analyze the csv file, conduct detailed descriptive statistics, inferential statistics on few columns unless explicitly asked.
 							- Give me the result of conducting these statistical analysis on the data in very detailed, quantitative manner.
-							- When perform analysis, perform advanced and industry level detailed analysis.
 							- Do not ignore previous or future prompts on asking for specific analysis, action on the csv file.
-							- Do not generate dataframe if you have previously generated, or seen the dataframe before.
+							- Do not generate dataframe if you have previously generated, or have seen or cached the dataframe before.
 							- Do not show the dataframe data to users unless they specifically ask for it.
-							- Do not hallucinate on column names. Do not make up column names without permission.
+							- Do not hallucinate on column names. Do not make up column names without permission. Only use real column name that exists in the provided data or csv file.
 							- Try to clean up missing data, if you can not clean up missing data, ask user to provide a clean dataset without missing data.
 							- When performing analysis, cleaning data, figuring out pattern, generating plots, try to avoid using seaborn instead use Matplotlib.
 						</TextChunk>
