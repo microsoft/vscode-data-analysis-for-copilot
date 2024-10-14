@@ -112,26 +112,22 @@ export class DataAgent implements vscode.Disposable {
 			const response = await chat.sendRequest(messages, options, token);
 
 			if (response.stream) {
-				try {
-					for await (const part of response.stream) {
-						if (part instanceof vscode.LanguageModelTextPart) {
-							stream.markdown(part.value);
-						} else if (part instanceof vscode.LanguageModelToolCallPart) {
-							const tool = vscode.lm.tools.find((tool) => (getToolName(tool) === part.name));
-							if (!tool) {
-								// BAD tool choice?
-								stream.progress(`Unknown function: ${part.name}`);
-								continue;
-							}
-
-							toolCalls.push({
-								call: part,
-								tool
-							});
+				for await (const part of response.stream) {
+					if (part instanceof vscode.LanguageModelTextPart) {
+						stream.markdown(part.value);
+					} else if (part instanceof vscode.LanguageModelToolCallPart) {
+						const tool = vscode.lm.tools.find((tool) => (getToolName(tool) === part.name));
+						if (!tool) {
+							// BAD tool choice?
+							stream.progress(`Unknown function: ${part.name}`);
+							continue;
 						}
+
+						toolCalls.push({
+							call: part,
+							tool
+						});
 					}
-				} catch (ex) {
-					console.log('Error in response stream', ex);
 				}
 			}
 
