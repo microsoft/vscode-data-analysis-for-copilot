@@ -9,13 +9,15 @@ import * as path from 'path';
 import * as unzipper from 'unzipper';
 
 const filesToIgnore: string[] = [
-	path.join('schema', 'piplite.v0.schema.json'),
-	path.join('pypi', 'all.json'),
+	// These are built by us, and licence covered by pyodide license
 	path.join('node', 'index.js.map'),
 	path.join('node', 'index.js'),
 	path.join('node', 'index.d.ts'),
 	path.join('node', 'comlink.worker.js'),
 	path.join('node', 'comlink.worker.js.map'),
+	// These are covered by pyodide license
+	path.join('schema', 'piplite.v0.schema.json'),
+	path.join('pypi', 'all.json'),
 	path.join('pyodide.mjs.map'),
 	path.join('pyodide.mjs'),
 	path.join('pyodide.js.map'),
@@ -24,10 +26,20 @@ const filesToIgnore: string[] = [
 	path.join('pyodide.asm.wasm'),
 	path.join('pyodide.asm.js'),
 	path.join('pyodide-lock.json'),
-	path.join('PYODIDE_LICENSE'),
-	path.join('LICENSE'),
 	path.join('package.json'),
 	path.join('ffi.d.ts'),
+	// pyodide license
+	path.join('PYODIDE_LICENSE'),
+	path.join('LICENSE'),
+	// These are compiled by pyodide.
+	path.join('hashlib-1.0.0.zip'),
+	path.join('lzma-1.0.0.zip'),
+	path.join('openssl-1.1.1n.zip'),
+	path.join('pydecimal-1.0.0.zip'),
+	path.join('pydoc_data-1.0.0.zip'),
+	path.join('python_stdlib.zip'),
+	path.join('sqlite3-1.0.0.zip'),
+	path.join('ssl-1.0.0.zip'),
 ];
 
 type LicenseInfo = {
