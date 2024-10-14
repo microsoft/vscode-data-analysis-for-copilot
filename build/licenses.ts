@@ -97,6 +97,12 @@ async function getLicenseFiles() {
 async function generateLicense(file: string) {
 	if (file.endsWith('.whl')) {
 		return generateWheelLicense(file);
+	} else if (file.endsWith('.whl.metadata')) {
+		// Ignore metadata files.
+	} else if (fs.statSync(file).isDirectory()) {
+		// Ignore directories.
+	} else {
+		console.error('License not generated for', file);
 	}
 }
 

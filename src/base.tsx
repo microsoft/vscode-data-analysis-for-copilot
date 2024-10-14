@@ -78,7 +78,7 @@ export class DataAgentPrompt extends PromptElement<PromptProps, void> {
 						- Do not generate dataframe unless explicitly asked for by the user or if you have previously seen the generated dataframe.
 						- Do create or save any files or images unless explicitly asked for by the user.
 						- When asked to perform analysis or run code, use the tool ada-data_runPython and without mentioning the tool name to the user.
-						- When asked to help with visualization, do not save the image to disk.
+						- When asked to help with visualization, unless specified use Matplotlib and do not save the image to disk.
 					</TextChunk>
 					{
 						csvFlag &&
@@ -95,7 +95,7 @@ export class DataAgentPrompt extends PromptElement<PromptProps, void> {
 							- Do not show the dataframe data to users unless they specifically ask for it.
 							- Do not hallucinate on column names. Do not make up column names without permission.
 							- Try to clean up missing data, if you can not clean up missing data, ask user to provide a clean dataset without missing data.
-							- When performing analysis, cleaning data, figuring out pattern, generating plots, try to avoid using seaborn.
+							- When performing analysis, cleaning data, figuring out pattern, generating plots, try to avoid using seaborn instead use Matplotlib.
 						</TextChunk>
 					}
 				</UserMessage>
