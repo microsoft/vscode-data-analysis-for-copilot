@@ -70,7 +70,6 @@ export class DataAgent implements vscode.Disposable {
 		let errorCount = 0;
 		let endedWithError = false;
 
-		const accumulatedToolResults: Record<string, vscode.LanguageModelToolResult> = {};
 		const toolCallRounds: ToolCallRound[] = [];
 
 		const runWithFunctions = async (): Promise<void> => {
@@ -131,9 +130,9 @@ export class DataAgent implements vscode.Disposable {
 			}
 
 			if (toolCalls.length) {
-				const currentRound = {
+				const currentRound: ToolCallRound = {
 					toolCalls: toolCalls.map(tc => tc.call),
-					response: new Map()
+					response: {}
 				};
 				toolCallRounds.push(currentRound);
 
@@ -148,8 +147,9 @@ export class DataAgent implements vscode.Disposable {
 				const toolResultMetadata = result.metadatas.getAll(ToolResultMetadata)
 				if (toolResultMetadata?.length) {
 					toolResultMetadata.forEach(meta => {
-						currentRound.response.set(meta.toolCallId, meta.result);
-						accumulatedToolResults[meta.toolCallId] = meta.result;
+						if (currentRound.toolCalls.find(tc => tc.toolCallId === meta.toolCallId)) {
+							currentRound.response[meta.toolCallId] = meta.result;
+						}
 					});
 				}
 
@@ -159,10 +159,11 @@ export class DataAgent implements vscode.Disposable {
 
 		await runWithFunctions();
 
+		console.log(toolCallRounds)
+
 		return {
 			metadata: {
 				toolCallsMetadata: {
-					toolCallResults: accumulatedToolResults,
 					toolCallRounds
 				}
 			} satisfies TsxToolUserMetadata

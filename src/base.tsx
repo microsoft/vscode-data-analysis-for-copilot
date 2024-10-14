@@ -18,12 +18,11 @@ import * as vscode from "vscode";
 
 export interface ToolCallRound {
 	toolCalls: vscode.LanguageModelToolCallPart[];
-	response: Map<string, vscode.LanguageModelToolResult>;
+	response: Record<string, vscode.LanguageModelToolResult>;
 }
 
 export interface ToolCallsMetadata {
     toolCallRounds: ToolCallRound[];
-    toolCallResults: Record<string, vscode.LanguageModelToolResult>;
 }
 
 export interface TsxToolUserMetadata {
@@ -116,7 +115,7 @@ export class DataAgentPrompt extends PromptElement<PromptProps, void> {
 							} else {
 								return (
 									<>
-										{turn.result.metadata?.toolCallsMetadata && <ToolCalls toolCallRounds={turn.result.metadata.toolCallsMetadata.toolCallRounds} toolInvocationToken={this.props.toolInvocationToken} extensionContext={this.props.extensionContext} toolCallResults={turn.result.metadata.toolCallsMetadata.toolCallResults }/>}
+										{turn.result.metadata?.toolCallsMetadata && <ToolCalls toolCallRounds={turn.result.metadata.toolCallsMetadata.toolCallRounds} toolInvocationToken={this.props.toolInvocationToken} extensionContext={this.props.extensionContext} />}
 										{this.renderChatResponseTurn(turn)}
 									</>
 								);
@@ -125,7 +124,7 @@ export class DataAgentPrompt extends PromptElement<PromptProps, void> {
 					}
 				</PrioritizedList>
 				<UserMessage priority={1000}>{userPrompt}</UserMessage>
-				<ToolCalls toolCallRounds={this.props.currentToolCallRounds} priority={1000} toolInvocationToken={this.props.toolInvocationToken} extensionContext={this.props.extensionContext} toolCallResults={{}} ></ToolCalls>
+				<ToolCalls toolCallRounds={this.props.currentToolCallRounds} priority={1000} toolInvocationToken={this.props.toolInvocationToken} extensionContext={this.props.extensionContext} ></ToolCalls>
 			</>
 		)
 	}
@@ -164,7 +163,6 @@ interface ToolCallsProps extends BasePromptElementProps {
 	toolCallRounds: ToolCallRound[];
 	toolInvocationToken: vscode.ChatParticipantToolToken | undefined;
 	extensionContext: vscode.ExtensionContext;
-    toolCallResults: Record<string, vscode.LanguageModelToolResult>;
 }
 
 class ToolCalls extends PromptElement<ToolCallsProps, void> {
@@ -199,7 +197,7 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 		</Chunk>;
 	}
 
-	private async _renderOneToolCall(toolCall: vscode.LanguageModelToolCallPart, resultsFromCurrentRound: Map<string, vscode.LanguageModelToolResult>, sizing: PromptSizing, toolInvocationToken: vscode.ChatParticipantToolToken | undefined): Promise<{ piece: PromptPiece; hasError: boolean }> {
+	private async _renderOneToolCall(toolCall: vscode.LanguageModelToolCallPart, resultsFromCurrentRound: Record<string, vscode.LanguageModelToolResult>, sizing: PromptSizing, toolInvocationToken: vscode.ChatParticipantToolToken | undefined): Promise<{ piece: PromptPiece; hasError: boolean }> {
 		const tool = vscode.lm.tools.find((tool) => tool.name === toolCall.name);
 		if (!tool) {
 			console.error(`Tool not found: ${toolCall.name}`);
@@ -209,7 +207,7 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 			};
 		}
 
-		const toolResult = resultsFromCurrentRound.get(toolCall.toolCallId) || this.props.toolCallResults[toolCall.toolCallId] || await this._getToolCallResult(tool, toolCall, toolInvocationToken);
+		const toolResult = resultsFromCurrentRound[toolCall.toolCallId] || await this._getToolCallResult(tool, toolCall, toolInvocationToken);
 
 		if (toolResult['text/plain']) {
 			const text = toolResult['text/plain'];
