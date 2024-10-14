@@ -246,12 +246,11 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 
 	private async _getToolCallResult(tool: vscode.LanguageModelToolDescription, toolCall: vscode.LanguageModelToolCallPart, toolInvocationToken: vscode.ChatParticipantToolToken | undefined) {
 		const token = new vscode.CancellationTokenSource().token;
-		const parameters = typeof toolCall.parameters === 'string' ? JSON.parse(toolCall.parameters) as Record<string, unknown> : toolCall.parameters;
 
 		const toolResult = await vscode.lm.invokeTool(
 			tool.name,
 			{
-				parameters: parameters,
+				parameters: toolCall.parameters,
 				toolInvocationToken: toolInvocationToken,
 				requestedContentTypes: [
 					'text/plain',
