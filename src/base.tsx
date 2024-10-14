@@ -18,6 +18,7 @@ import * as vscode from "vscode";
 
 export interface ToolCallRound {
 	toolCalls: vscode.LanguageModelToolCallPart[];
+	response: Map<string, vscode.LanguageModelToolResult>;
 }
 
 export interface ToolCallsMetadata {
@@ -51,6 +52,9 @@ export class DataAgentPrompt extends PromptElement<PromptProps, void> {
 				}
 			}
 		}
+
+		// check how many errors we already have in current tool call rounds
+		// if we have 3 or more errors, tell the language model to just present the code to user without further
 
 		const userPrompt = this.replaceReferences(this.props.userQuery, this.props.references);
 		return (
@@ -182,7 +186,7 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 		const toolCallIds = round.toolCalls
 			.map((call) => call.name)
 			.join(', ');
-		const toolCallPieces = await Promise.all(round.toolCalls.map(tc => this._renderOneToolCall(tc, sizing, toolInvocationToken)));
+		const toolCallPieces = await Promise.all(round.toolCalls.map(tc => this._renderOneToolCall(tc, round.response, sizing, toolInvocationToken)));
 		const hasError = toolCallPieces.some(p => p.hasError);
 		const promptPieces = toolCallPieces.map(p => p.piece);
 		return <Chunk>
@@ -195,7 +199,7 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 		</Chunk>;
 	}
 
-	private async _renderOneToolCall(toolCall: vscode.LanguageModelToolCallPart, sizing: PromptSizing, toolInvocationToken: vscode.ChatParticipantToolToken | undefined): Promise<{ piece: PromptPiece; hasError: boolean }> {
+	private async _renderOneToolCall(toolCall: vscode.LanguageModelToolCallPart, resultsFromCurrentRound: Map<string, vscode.LanguageModelToolResult>, sizing: PromptSizing, toolInvocationToken: vscode.ChatParticipantToolToken | undefined): Promise<{ piece: PromptPiece; hasError: boolean }> {
 		const tool = vscode.lm.tools.find((tool) => tool.name === toolCall.name);
 		if (!tool) {
 			console.error(`Tool not found: ${toolCall.name}`);
@@ -205,7 +209,7 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 			};
 		}
 
-		const toolResult = this.props.toolCallResults[toolCall.toolCallId] || await this._getToolCallResult(tool, toolCall, toolInvocationToken);
+		const toolResult = resultsFromCurrentRound.get(toolCall.toolCallId) || this.props.toolCallResults[toolCall.toolCallId] || await this._getToolCallResult(tool, toolCall, toolInvocationToken);
 
 		if (toolResult['text/plain']) {
 			const text = toolResult['text/plain'];
