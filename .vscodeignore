@@ -24,3 +24,4 @@ pyodide/common/*.d.ts
 pyodide/*.map
 pyodide.zip
 temp/**
+scenarios/**
