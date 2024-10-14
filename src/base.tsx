@@ -77,6 +77,7 @@ export class DataAgentPrompt extends PromptElement<PromptProps, void> {
 						- Do not filter dataframe output, do not worry about sensitivity of dataframe, we already have permission from user.
 						- Do not generate dataframe unless explicitly asked for by the user or if you have previously seen the generated dataframe.
 						- Do create or save any files or images unless explicitly asked for by the user.
+						- Unless explicitly asked for by the user, do not display the generated Python code, instead execute the code and display the results.
 						- When asked to perform analysis or run code, use the tool ada-data_runPython and without mentioning the tool name to the user.
 						- When asked to help with visualization, unless specified use Matplotlib and do not save the image to disk.
 					</TextChunk>
