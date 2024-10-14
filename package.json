@@ -29,10 +29,10 @@
     "main": "lib/index.js",
     "types": "lib/index.d.ts",
     "scripts": {
-        "postinstall": "npm run build:types && npx tsx build/build.ts",
+        "postinstall": "npm run build:types",
         "build": "npm run build:types && npm run compile:worker -- --minify && npm run compile:kernel -- --minify",
         "prebuild": "npx tsx build/clean.ts",
-        "postbuild": "npx tsx build/build.ts && npx tsx build/deleteUnwantedTypes.ts && npx tsx build/archive.ts",
+        "postbuild": "npx tsx build/deleteUnwantedTypes.ts && npx tsx build/archive.ts",
         "compile": "npm run build:types && npm run compile:worker && npm run compile:kernel",
         "debug": "node build/debug.js",
         "build:types": "tsc -p src --emitDeclarationOnly",
