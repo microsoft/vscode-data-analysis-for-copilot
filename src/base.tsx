@@ -16,17 +16,31 @@ import { Chunk, TextChunk, ToolCall, ToolMessage } from '@vscode/prompt-tsx/dist
 import * as path from 'path';
 import * as vscode from "vscode";
 
+const userMessageWithWithImageFromToolCall = `Return this image link in your response. Do not modify the markdown image link at all. The path is already absolute local file path, do not put "https" or "blob" in the link`;
+
+export function isUserMessageWithImageFromToolCall(message: string) {
+	return message.includes(userMessageWithWithImageFromToolCall);
+}
+
+export function isFinalUserMessageInResponseToToolCall(message: string) {
+	return message.includes('Above is the result of calling the functions') && message.includes('Try your best to utilize the request, response from previous chat history.Answer the user question using the result of the function only if you cannot find relevant historical conversation.');
+}
+
+function generateUserMessageForToolResponse(toolCallIds: string) {
+	return `Above is the result of calling the functions ${toolCallIds}. Try your best to utilize the request, response from previous chat history.Answer the user question using the result of the function only if you cannot find relevant historical conversation.`;
+}
+
 export interface ToolCallRound {
 	toolCalls: vscode.LanguageModelToolCallPart[];
 	response: Record<string, vscode.LanguageModelToolResult>;
 }
 
 export interface ToolCallsMetadata {
-    toolCallRounds: ToolCallRound[];
+	toolCallRounds: ToolCallRound[];
 }
 
 export interface TsxToolUserMetadata {
-    toolCallsMetadata: ToolCallsMetadata;
+	toolCallsMetadata: ToolCallsMetadata;
 }
 
 export interface PromptProps extends BasePromptElementProps {
@@ -124,7 +138,7 @@ export class DataAgentPrompt extends PromptElement<PromptProps, void> {
 				</PrioritizedList>
 				<UserMessage priority={1000}>{userPrompt}</UserMessage>
 				<ToolCalls toolCallRounds={this.props.currentToolCallRounds} priority={1000} toolInvocationToken={this.props.toolInvocationToken} extensionContext={this.props.extensionContext} ></ToolCalls>
-				{ shouldStopRetry && <UserMessage>We encountered an error three times. Please present only the last ran attempted code to the user. Instead of performing another function call</UserMessage>}
+				{shouldStopRetry && <UserMessage>We encountered an error three times. Please present only the last ran attempted code to the user. Instead of performing another function call</UserMessage>}
 			</>
 		)
 	}
@@ -190,7 +204,7 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 		const toolCallPieces = await Promise.all(this.props.toolCallRounds.map(round => this._renderOneRound(round, sizing, this.props.toolInvocationToken)));
 
 		return <>
-				{toolCallPieces}
+			{toolCallPieces}
 		</>
 	}
 
@@ -206,7 +220,7 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 			<AssistantMessage toolCalls={assistantToolCalls}></AssistantMessage>
 			{promptPieces}
 			<UserMessage>
-				<TextChunk>Above is the result of calling the functions {toolCallIds}. Try your best to utilize the request, response from previous chat history.Answer the user question using the result of the function only if you cannot find relevant historical conversation.</TextChunk>
+				<TextChunk>{generateUserMessageForToolResponse(toolCallIds)}</TextChunk>
 			</UserMessage>
 		</Chunk>;
 	}
@@ -224,9 +238,9 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 			const text = toolResult['text/plain'];
 
 			return <ToolMessage toolCallId={toolCall.toolCallId}>
-						<meta value={new ToolResultMetadata(toolCall.toolCallId, toolResult)}></meta>
-					{text}
-				</ToolMessage>;
+				<meta value={new ToolResultMetadata(toolCall.toolCallId, toolResult)}></meta>
+				{text}
+			</ToolMessage>;
 		} else if (toolResult['image/png']) {
 			const piece = await this._processImageOutput(toolCall.name, toolCall.toolCallId, toolResult);
 			return piece;
@@ -275,7 +289,7 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 						<meta value={new ToolResultMetadata(toolCallId, toolResult)}></meta>
 						{markdownTextForImage}
 					</ToolMessage>
-					<UserMessage>Return this image link in your response. Do not modify the markdown image link at all. The path is already absolute local file path, do not put "https" or "blob" in the link'</UserMessage>
+					<UserMessage>{userMessageWithWithImageFromToolCall}</UserMessage>
 				</>
 			}
 		}
@@ -287,7 +301,7 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 				<meta value={new ToolResultMetadata(toolCallId, toolResult)}></meta>
 				{markdownTextForImage}
 			</ToolMessage>
-			<UserMessage>Return this image link in your response. Do not modify the markdown image link at all. The path is already absolute local file path, do not put "https" or "blob" in the link'</UserMessage>
+			<UserMessage>{userMessageWithWithImageFromToolCall}</UserMessage>
 		</>;
 	}
 

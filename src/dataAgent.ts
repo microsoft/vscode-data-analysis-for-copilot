@@ -4,7 +4,7 @@
 
 import { renderPrompt } from '@vscode/prompt-tsx';
 import * as vscode from 'vscode';
-import { DataAgentPrompt, ToolCallRound, ToolResultMetadata, TsxToolUserMetadata } from './base';
+import { DataAgentPrompt, isFinalUserMessageInResponseToToolCall, isUserMessageWithImageFromToolCall, ToolCallRound, ToolResultMetadata, TsxToolUserMetadata } from './base';
 
 const DATA_AGENT_PARTICIPANT_ID = 'ada.data';
 const MODEL_SELECTOR: vscode.LanguageModelChatSelector = {
@@ -14,15 +14,35 @@ const MODEL_SELECTOR: vscode.LanguageModelChatSelector = {
 
 export class DataAgent implements vscode.Disposable {
 	private _disposables: vscode.Disposable[] = [];
+	private readonly generatedCode = new Map<string, string>();
 
 	constructor(readonly extensionContext: vscode.ExtensionContext) {
 		this._disposables.push(vscode.chat.createChatParticipant(DATA_AGENT_PARTICIPANT_ID, this.handle.bind(this)));
+		this._disposables.push(vscode.commands.registerCommand('ada.showExecutedPythonCode', async (executionId: string) => {
+			const code = this.generatedCode.get(executionId);
+			if (code) {
+				const document = await vscode.workspace.openTextDocument({
+					content: code,
+					language: 'python'
+				});
+				void vscode.window.showTextDocument(document);
+			}
+		}));
 	}
 
 	dispose() {
 		this._disposables.forEach((d) => d.dispose());
 	}
 
+	private clearOldCode(chatContext: vscode.ChatContext) {
+		const toolCallRounds = chatContext.history.filter(h => h instanceof vscode.ChatResponseTurn && Array.isArray(h.result.metadata?.toolCallsMetadata?.toolCallRounds)).map(h => (h as vscode.ChatResponseTurn).result.metadata?.toolCallsMetadata?.toolCallRounds as ToolCallRound[]).flat();
+		const validToolCallIds = toolCallRounds.map(r => r.toolCalls.map(tc => tc.toolCallId)).flat();
+		this.generatedCode.forEach((value, key) => {
+			if (!validToolCallIds.includes(key)) {
+				this.generatedCode.delete(key);
+			}
+		});
+	}
 	public async handle(
 		request: vscode.ChatRequest,
 		chatContext: vscode.ChatContext,
@@ -35,6 +55,8 @@ export class DataAgent implements vscode.Disposable {
 			return {};
 		}
 
+		this.clearOldCode(chatContext);
+		
 		const chat = models[0];
 
 		stream.progress('Analyzing');
@@ -77,9 +99,10 @@ export class DataAgent implements vscode.Disposable {
 
 			console.log('SENDING REQUEST', messages);
 			const toolCalls: vscode.LanguageModelToolCallPart[] = [];
+			const pyodideToolCalls = toolCallRounds.map(r => r.toolCalls).flat().filter(tc => tc.name === 'ada-data_runPython');
+			const isFinalResponse = messages.length && isFinalUserMessageInResponseToToolCall(messages[messages.length - 1].content + messages[messages.length - 1].content2);
 
 			const response = await chat.sendRequest(messages, options, token);
-
 			if (response.stream) {
 				for await (const part of response.stream) {
 					if (part instanceof vscode.LanguageModelTextPart) {
@@ -93,6 +116,32 @@ export class DataAgent implements vscode.Disposable {
 						}
 
 						toolCalls.push(part);
+					}
+				}
+			}
+
+			if (!toolCalls.length && isFinalResponse) {
+				const isSecondLastMessageAnImageLink = messages.length > 1 && isUserMessageWithImageFromToolCall(messages[messages.length - 2].content + messages[messages.length - 2].content2);
+				const isSecondLastMessageTextOutput = messages.length > 1 && pyodideToolCalls.find(toolCall => messages[messages.length - 2].content2.some(c => typeof c !== 'string' && c.toolCallId === toolCall.toolCallId));
+				const isThirdLastMessageAnImageResponse = messages.length > 2 && pyodideToolCalls.find(toolCall => messages[messages.length - 3].content2.some(c => typeof c !== 'string' && c.toolCallId === toolCall.toolCallId));
+				// Possible the last message was an image as a result of some analysis.
+				// Assumption is that if an image was shown, then some Python code was executed successfully against Pyodide
+				if (isSecondLastMessageAnImageLink && isThirdLastMessageAnImageResponse && isThirdLastMessageAnImageResponse.parameters && 'code' in isThirdLastMessageAnImageResponse.parameters) {
+					const message = messages[messages.length - 3].content2.find(c => typeof c !== 'string' && c.toolCallId === isThirdLastMessageAnImageResponse.toolCallId);
+					const id = typeof message === 'string' ? undefined : message?.toolCallId;
+					const code = isThirdLastMessageAnImageResponse.parameters.code
+					if (id && code && typeof code === 'string') {
+						this.generatedCode.set(id, code);
+						stream.button({ command: 'ada.showExecutedPythonCode', title: 'Show Executed Python Code', arguments: [id] });
+					}
+				} else if (isSecondLastMessageTextOutput && isSecondLastMessageTextOutput && 'code' in isSecondLastMessageTextOutput.parameters) {
+					// Possible the last message was a result of a tool call and we displayed some output & not errors.
+					const message = messages[messages.length - 2].content2.find(c => typeof c !== 'string' && c.toolCallId === isSecondLastMessageTextOutput.toolCallId);
+					const id = typeof message === 'string' ? undefined : message?.toolCallId;
+					const code = isSecondLastMessageTextOutput.parameters.code
+					if (id && code && typeof code === 'string') {
+						this.generatedCode.set(id, code);
+						stream.button({ command: 'ada.showExecutedPythonCode', title: 'Show Executed Python Code', arguments: [id] });
 					}
 				}
 			}
