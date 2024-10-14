@@ -12,11 +12,6 @@ const MODEL_SELECTOR: vscode.LanguageModelChatSelector = {
 	family: 'gpt-4o'
 };
 
-interface IToolCall {
-	tool: vscode.LanguageModelToolDescription;
-	call: vscode.LanguageModelToolCallPart;
-}
-
 export class DataAgent implements vscode.Disposable {
 	private _disposables: vscode.Disposable[] = [];
 
@@ -81,7 +76,7 @@ export class DataAgent implements vscode.Disposable {
 			}
 
 			console.log('SENDING REQUEST', messages);
-			const toolCalls: IToolCall[] = [];
+			const toolCalls: vscode.LanguageModelToolCallPart[] = [];
 
 			const response = await chat.sendRequest(messages, options, token);
 
@@ -97,17 +92,14 @@ export class DataAgent implements vscode.Disposable {
 							continue;
 						}
 
-						toolCalls.push({
-							call: part,
-							tool
-						});
+						toolCalls.push(part);
 					}
 				}
 			}
 
 			if (toolCalls.length) {
 				const currentRound: ToolCallRound = {
-					toolCalls: toolCalls.map(tc => tc.call),
+					toolCalls: toolCalls,
 					response: {}
 				};
 				toolCallRounds.push(currentRound);
@@ -134,8 +126,6 @@ export class DataAgent implements vscode.Disposable {
 		};
 
 		await runWithFunctions();
-
-		console.log(toolCallRounds)
 
 		return {
 			metadata: {
