@@ -67,8 +67,6 @@ export class DataAgent implements vscode.Disposable {
 		let messages: vscode.LanguageModelChatMessage[] = prompt.messages as vscode.LanguageModelChatMessage[];
 
 		const toolReferences = [...request.toolReferences];
-		let errorCount = 0;
-		let endedWithError = false;
 
 		const toolCallRounds: ToolCallRound[] = [];
 
@@ -84,28 +82,6 @@ export class DataAgent implements vscode.Disposable {
 
 			console.log('SENDING REQUEST', messages);
 			const toolCalls: IToolCall[] = [];
-
-			// Loop through the messages, check if there are 3 or greater # of tool call error -
-			// Tell Language Model to just present the code to user without further tool call
-			for (const msg of messages) {
-				if (msg && msg instanceof vscode.LanguageModelChatMessage) {
-					if (msg.content2 && msg.content2[0] && msg.content2[0] instanceof vscode.LanguageModelToolResultPart && msg.content2[0].content) {
-						if (msg.content2[0].content === 'We encountered an error') {
-							errorCount++;
-							endedWithError = true;
-						}
-					}
-				}
-			}
-			// Re-try the function call if we encountered an error less than 3 times
-			if (errorCount < 3 && endedWithError) {
-				runWithFunctions();
-			}
-
-			if (errorCount >= 3) {
-				messages.push(vscode.LanguageModelChatMessage.User('We encountered an error three times. Please present only the last ran attempted code to the user. Instead of performing another function call'));
-				console.log('Encountered Three errors from function call');
-			}
 
 			const response = await chat.sendRequest(messages, options, token);
 

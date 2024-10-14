@@ -52,8 +52,7 @@ export class DataAgentPrompt extends PromptElement<PromptProps, void> {
 			}
 		}
 
-		// check how many errors we already have in current tool call rounds
-		// if we have 3 or more errors, tell the language model to just present the code to user without further
+		const shouldStopRetry = this.shouldStopRetry();
 
 		const userPrompt = this.replaceReferences(this.props.userQuery, this.props.references);
 		return (
@@ -125,8 +124,25 @@ export class DataAgentPrompt extends PromptElement<PromptProps, void> {
 				</PrioritizedList>
 				<UserMessage priority={1000}>{userPrompt}</UserMessage>
 				<ToolCalls toolCallRounds={this.props.currentToolCallRounds} priority={1000} toolInvocationToken={this.props.toolInvocationToken} extensionContext={this.props.extensionContext} ></ToolCalls>
+				{ shouldStopRetry && <UserMessage>We encountered an error three times. Please present only the last ran attempted code to the user. Instead of performing another function call</UserMessage>}
 			</>
 		)
+	}
+
+	private shouldStopRetry() {
+		let errorCount = 0;
+		let endedWithError = false;
+		for (const toolCallRound of this.props.currentToolCallRounds) {
+			toolCallRound.toolCalls.forEach((toolCall) => {
+				const response = toolCallRound.response[toolCall.toolCallId];
+				if (response && response['application/vnd.code.notebook.error']) {
+					errorCount++;
+					endedWithError = true;
+				}
+			});
+		}
+
+		return errorCount >= 3 && endedWithError;
 	}
 
 	private replaceReferences(userPrompt: string, references: readonly vscode.ChatPromptReference[]) {
@@ -185,26 +201,21 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 			.map((call) => call.name)
 			.join(', ');
 		const toolCallPieces = await Promise.all(round.toolCalls.map(tc => this._renderOneToolCall(tc, round.response, sizing, toolInvocationToken)));
-		const hasError = toolCallPieces.some(p => p.hasError);
-		const promptPieces = toolCallPieces.map(p => p.piece);
+		const promptPieces = toolCallPieces;
 		return <Chunk>
 			<AssistantMessage toolCalls={assistantToolCalls}></AssistantMessage>
 			{promptPieces}
 			<UserMessage>
-				{hasError && <TextChunk>If you fail three times after calling the tool, just present the code to the user.</TextChunk>}
 				<TextChunk>Above is the result of calling the functions {toolCallIds}. Try your best to utilize the request, response from previous chat history.Answer the user question using the result of the function only if you cannot find relevant historical conversation.</TextChunk>
 			</UserMessage>
 		</Chunk>;
 	}
 
-	private async _renderOneToolCall(toolCall: vscode.LanguageModelToolCallPart, resultsFromCurrentRound: Record<string, vscode.LanguageModelToolResult>, sizing: PromptSizing, toolInvocationToken: vscode.ChatParticipantToolToken | undefined): Promise<{ piece: PromptPiece; hasError: boolean }> {
+	private async _renderOneToolCall(toolCall: vscode.LanguageModelToolCallPart, resultsFromCurrentRound: Record<string, vscode.LanguageModelToolResult>, sizing: PromptSizing, toolInvocationToken: vscode.ChatParticipantToolToken | undefined): Promise<PromptPiece> {
 		const tool = vscode.lm.tools.find((tool) => tool.name === toolCall.name);
 		if (!tool) {
 			console.error(`Tool not found: ${toolCall.name}`);
-			return {
-				piece: <ToolMessage toolCallId={toolCall.toolCallId}>Tool not found</ToolMessage>,
-				hasError: true
-			};
+			return <ToolMessage toolCallId={toolCall.toolCallId}>Tool not found</ToolMessage>;
 		}
 
 		const toolResult = resultsFromCurrentRound[toolCall.toolCallId] || await this._getToolCallResult(tool, toolCall, toolInvocationToken);
@@ -212,38 +223,25 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 		if (toolResult['text/plain']) {
 			const text = toolResult['text/plain'];
 
-			return {
-				piece:
-					<ToolMessage toolCallId={toolCall.toolCallId}>
+			return <ToolMessage toolCallId={toolCall.toolCallId}>
 						<meta value={new ToolResultMetadata(toolCall.toolCallId, toolResult)}></meta>
 					{text}
-				</ToolMessage>,
-				hasError: false
-			};
+				</ToolMessage>;
 		} else if (toolResult['image/png']) {
-			return {
-				piece: await this._processImageOutput(toolCall.name, toolCall.toolCallId, toolResult),
-				hasError: false
-			}
+			const piece = await this._processImageOutput(toolCall.name, toolCall.toolCallId, toolResult);
+			return piece;
 		} else if (toolResult['application/vnd.code.notebook.error']) {
 			const error = toolResult['application/vnd.code.notebook.error'] as Error;
 			const errorContent = [error.name || '', error.message || '', error.stack || ''].filter((part) => part).join('\n');
 			const errorMessage = `The tool returned an error, analyze this error and attempt to resolve this. Error: ${errorContent}`;
 
-			return {
-				piece:
-					<ToolMessage toolCallId={toolCall.toolCallId}>
-						<meta value={new ToolResultMetadata(toolCall.toolCallId, toolResult)}></meta>
-						<TextChunk>{errorMessage}</TextChunk>
-					</ToolMessage>,
-				hasError: true
-			}
+			return <ToolMessage toolCallId={toolCall.toolCallId}>
+				<meta value={new ToolResultMetadata(toolCall.toolCallId, toolResult)}></meta>
+				<TextChunk>{errorMessage}</TextChunk>
+			</ToolMessage>;
 		}
 
-		return {
-			piece: <></>,
-			hasError: false
-		};
+		return <></>;
 	}
 
 	private async _getToolCallResult(tool: vscode.LanguageModelToolDescription, toolCall: vscode.LanguageModelToolCallPart, toolInvocationToken: vscode.ChatParticipantToolToken | undefined) {
