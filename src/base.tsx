@@ -76,7 +76,6 @@ export class DataAgentPrompt extends PromptElement<PromptProps, void> {
 						- Do your best to not filter answer when referencing tool call and tool call result.
 						- Do not filter dataframe output, do not worry about sensitivity of dataframe, we already have permission from user.
 						- Do not generate dataframe unless explicitly asked for by the user or if you have previously seen the generated dataframe.
-						- When generating Python code for visualization, first use a tool to retrieving the actual column names and data types, then use this as a second step to generate the necessary Python code..
 						- Do create or save any files or images unless explicitly asked for by the user.
 						- Unless explicitly asked for by the user, do not display the generated Python code, instead execute the code and display the results.
 						- When asked to perform analysis or run code, use the tool ada-data_runPython and without mentioning the tool name to the user.
