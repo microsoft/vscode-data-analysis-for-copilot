@@ -23,14 +23,16 @@
 			"type": "extensionHost",
 			"request": "launch",
 			"args": [
+				"--enable-proposed-api",
 				"--extensionDevelopmentPath=${workspaceFolder}",
-				"--extensionTestsPath=${workspaceFolder}/out/test/suite/index"
+				"--extensionTestsPath=${workspaceFolder}/out/test/index.node",
+				"${workspaceFolder}/scenarios"
 			],
 			"outFiles": [
 				"${workspaceFolder}/out/**/*.js",
 				"${workspaceFolder}/dist/**/*.js"
 			],
-			"preLaunchTask": "tasks: watch-tests"
+			// "preLaunchTask": "tasks: watch-tests"
 		}
 	]
 }
