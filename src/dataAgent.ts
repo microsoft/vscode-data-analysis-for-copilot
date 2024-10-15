@@ -6,7 +6,7 @@ import { renderPrompt } from '@vscode/prompt-tsx';
 import * as vscode from 'vscode';
 import { DataAgentPrompt, isFinalUserMessageInResponseToToolCall, isUserMessageWithImageFromToolCall, ToolCallRound, ToolResultMetadata, TsxToolUserMetadata } from './base';
 
-const DATA_AGENT_PARTICIPANT_ID = 'ada.data';
+const DATA_AGENT_PARTICIPANT_ID = 'dachat.data';
 const MODEL_SELECTOR: vscode.LanguageModelChatSelector = {
 	vendor: 'copilot',
 	family: 'gpt-4o'

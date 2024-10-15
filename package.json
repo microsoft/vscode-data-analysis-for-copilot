@@ -21,7 +21,7 @@
         "Chat"
     ],
     "activationEvents": [
-        "onChatParticipant:ada.data"
+        "onChatParticipant:dachat.data"
     ],
     "enabledApiProposals": [
         "chatVariableResolver",
@@ -33,16 +33,16 @@
     "contributes": {
         "chatParticipants": [
             {
-                "id": "ada.data",
-                "fullName": "Advanced Data Analytics",
-                "name": "ada",
+                "id": "dachat.data",
+                "fullName": "Data Analytics",
+                "name": "data",
                 "description": "I can help you with data analytics",
                 "isSticky": true
             }
         ],
         "languageModelTools": [
             {
-                "name": "ada-data_findFiles",
+                "name": "dachat_data_findFiles",
                 "tags": [],
                 "displayName": "Find Files",
                 "modelDescription": "Search for files in the current workspace",
@@ -63,7 +63,7 @@
                 ]
             },
             {
-                "name": "ada-data_runPython",
+                "name": "dachat_data_runPython",
                 "tags": [],
                 "displayName": "Run Python",
                 "modelDescription": "Execute Python code locally using Pyodide, providing access to Python's extensive functionality. This tool extends the LLM's capabilities by allowing it to run Python code for a wide range of computational tasks and data manipulations that it cannot perform directly. When you know the workspace folder path and the file path, use the relative path to the file when generating code.",
