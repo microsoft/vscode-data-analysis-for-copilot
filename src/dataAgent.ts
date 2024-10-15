@@ -56,7 +56,7 @@ export class DataAgent implements vscode.Disposable {
 		}
 
 		this.clearOldCode(chatContext);
-		
+
 		const chat = models[0];
 
 		stream.progress('Analyzing');
@@ -108,6 +108,7 @@ export class DataAgent implements vscode.Disposable {
 					if (part instanceof vscode.LanguageModelTextPart) {
 						stream.markdown(part.value);
 					} else if (part instanceof vscode.LanguageModelToolCallPart) {
+						console.log('RECEIVED TOOL CALL', part.name);
 						const tool = vscode.lm.tools.find((tool) => (tool.name === part.name));
 						if (!tool) {
 							// BAD tool choice?
