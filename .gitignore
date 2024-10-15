@@ -398,6 +398,7 @@ FodyWeavers.xsd
 *.sln.iml
 
 
+.vscode-test/
 *.d.ts
 *.vsix
 out/
