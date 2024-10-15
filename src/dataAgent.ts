@@ -132,8 +132,8 @@ export class DataAgent implements vscode.Disposable {
 					const id = typeof message === 'string' ? undefined : message?.toolCallId;
 					const code = isThirdLastMessageAnImageResponse.parameters.code
 					if (id && code && typeof code === 'string') {
-						this.generatedCode.set(id, code);
-						stream.button({ command: 'ada.showExecutedPythonCode', title: 'Show Executed Python Code', arguments: [id] });
+						// this.generatedCode.set(id, code);
+						// stream.button({ command: 'ada.showExecutedPythonCode', title: '$(code)', arguments: [id] });
 					}
 				} else if (isSecondLastMessageTextOutput && isSecondLastMessageTextOutput && 'code' in isSecondLastMessageTextOutput.parameters) {
 					// Possible the last message was a result of a tool call and we displayed some output & not errors.
@@ -141,8 +141,8 @@ export class DataAgent implements vscode.Disposable {
 					const id = typeof message === 'string' ? undefined : message?.toolCallId;
 					const code = isSecondLastMessageTextOutput.parameters.code
 					if (id && code && typeof code === 'string') {
-						this.generatedCode.set(id, code);
-						stream.button({ command: 'ada.showExecutedPythonCode', title: 'Show Executed Python Code', arguments: [id] });
+						// this.generatedCode.set(id, code);
+						// stream.button({ command: 'ada.showExecutedPythonCode', title: '$(code)', arguments: [id] });
 					}
 				}
 			}
