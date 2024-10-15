@@ -161,6 +161,7 @@ export class DataAgent implements vscode.Disposable {
 				));
 
 				messages = result.messages;
+				console.log('Token count', result.tokenCount);
 				const toolResultMetadata = result.metadatas.getAll(ToolResultMetadata)
 				if (toolResultMetadata?.length) {
 					toolResultMetadata.forEach(meta => {

@@ -232,7 +232,7 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 			return <ToolMessage toolCallId={toolCall.toolCallId}>Tool not found</ToolMessage>;
 		}
 
-		const toolResult = resultsFromCurrentRound[toolCall.toolCallId] || await this._getToolCallResult(tool, toolCall, toolInvocationToken);
+		const toolResult = resultsFromCurrentRound[toolCall.toolCallId] || await this._getToolCallResult(tool, toolCall, toolInvocationToken, sizing);
 
 		if (toolResult['text/plain']) {
 			const text = toolResult['text/plain'];
@@ -258,7 +258,7 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 		return <></>;
 	}
 
-	private async _getToolCallResult(tool: vscode.LanguageModelToolDescription, toolCall: vscode.LanguageModelToolCallPart, toolInvocationToken: vscode.ChatParticipantToolToken | undefined) {
+	private async _getToolCallResult(tool: vscode.LanguageModelToolDescription, toolCall: vscode.LanguageModelToolCallPart, toolInvocationToken: vscode.ChatParticipantToolToken | undefined, sizing: PromptSizing) {
 		const token = new vscode.CancellationTokenSource().token;
 
 		const toolResult = await vscode.lm.invokeTool(
@@ -270,7 +270,13 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 					'text/plain',
 					'image/png',
 					'application/vnd.code.notebook.error'
-				]
+				],
+				tokenOptions: {
+					tokenBudget: sizing.tokenBudget,
+					countTokens: async (text, token) => {
+						return sizing.countTokens(text, token);
+					}
+				}
 			},
 			token
 		);
