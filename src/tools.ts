@@ -10,6 +10,7 @@ interface IFindFilesParameters {
 }
 
 export class FindFilesTool implements vscode.LanguageModelTool<IFindFilesParameters> {
+	public static Id = 'dachat_data_findFiles';
 	constructor(readonly context: vscode.ExtensionContext) { }
 
 	async invoke(
@@ -54,6 +55,7 @@ interface IRunPythonParameters {
 }
 
 export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParameters> {
+	public static Id = 'dachat_data_runPython';
 	private _kernel: Kernel;
 	private pendingRequests: Promise<unknown> = Promise.resolve();
 	constructor(context: vscode.ExtensionContext) {
