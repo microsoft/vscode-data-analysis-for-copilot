@@ -100,8 +100,9 @@ export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParamet
 		options: vscode.LanguageModelToolInvocationPrepareOptions<IRunPythonParameters>,
 		_token: vscode.CancellationToken
 	) {
+		const reasonMessage = options.parameters.reason ? `: "${options.parameters.reason}"` : '';
 		return {
-			invocationMessage: `Executing Code: "${options.parameters.reason}"`
+			invocationMessage: `Executing Code${reasonMessage}`
 		};
 	}
 }

@@ -59,8 +59,6 @@ export class DataAgent implements vscode.Disposable {
 
 		const chat = models[0];
 
-		stream.progress('Analyzing');
-
 		const allTools = vscode.lm.tools.map((tool): vscode.LanguageModelChatTool => {
 			return {
 				name: tool.name,
@@ -102,6 +100,7 @@ export class DataAgent implements vscode.Disposable {
 			const pyodideToolCalls = toolCallRounds.map(r => r.toolCalls).flat().filter(tc => tc.name === 'ada-data_runPython');
 			const isFinalResponse = messages.length && isFinalUserMessageInResponseToToolCall(messages[messages.length - 1].content + messages[messages.length - 1].content2);
 
+			stream.progress('Analyzing');
 			const response = await chat.sendRequest(messages, options, token);
 			if (response.stream) {
 				for await (const part of response.stream) {
