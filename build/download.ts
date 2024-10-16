@@ -108,6 +108,16 @@ export async function downloadCommWheel() {
 	await downloadFile(url, dest);
 }
 
+export async function downloadSeabornWheels() {
+	const url = 'https://files.pythonhosted.org/packages/83/11/00d3c3dfc25ad54e731d91449895a79e4bf2384dc3ac01809010ba88f6d5/seaborn-0.13.2-py3-none-any.whl';
+	const dest = path.join(__dirname, '..', 'pyodide', 'seaborn-0.13.2-py3-none-any.whl');
+	if (fs.existsSync(dest)) {
+		// Re-use the same file.
+		return;
+	}
+	await downloadFile(url, dest);
+}
+
 
 export async function downloadPyodideArtifacts() {
 	const contents = await downloadContents(pyodideApiUri);
@@ -262,6 +272,7 @@ async function main() {
 	}
 	await downloadPyodideKernel();
 	await downloadCommWheel();
+	await downloadSeabornWheels();
 	await downloadPyodideScripts();
 	await downloadPyodideArtifacts();
 	await generateLicenses();

@@ -4,6 +4,7 @@
 
 import * as vscode from 'vscode';
 import type { Kernel } from '../pyodide/node/index';
+import * as path from 'path';
 
 interface IFindFilesParameters {
 	pattern: string;
@@ -65,7 +66,11 @@ export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParamet
 		// eslint-disable-next-line @typescript-eslint/no-require-imports
 		const { Kernel } = require(kernelPath) as typeof import('../pyodide/node/index');
 		const folder = vscode.workspace.workspaceFolders?.length ? vscode.workspace.workspaceFolders[0].uri.fsPath : ''
-		this._kernel = new Kernel(pyodidePath.fsPath, workerPath, folder);
+		this._kernel = new Kernel({
+			pyodidePath: pyodidePath.fsPath, workerPath, location: folder, packages: [
+				vscode.Uri.file(path.join(pyodidePath.fsPath, 'seaborn-0.13.2-py3-none-any.whl')).toString()
+			]
+		});
 	}
 
 	async invoke(
