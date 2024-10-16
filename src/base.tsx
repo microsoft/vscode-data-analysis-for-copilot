@@ -174,20 +174,23 @@ interface HistoryProps extends BasePromptElementProps {
 
 class History extends PromptElement<HistoryProps, void> {
 	async render(_state: void, _sizing: PromptSizing) {
+		const toolCalls = this.props.history.filter(turn => turn instanceof vscode.ChatResponseTurn && turn.result.metadata?.toolCallsMetadata);
+		const messagePriority = toolCalls.length + 1;
+
 		return <PrioritizedList priority={this.props.priority ?? 500} descending={false}>
 			{
 				this.props.history.map(turn => {
 					if (turn instanceof vscode.ChatRequestTurn) {
 						return (
 							<>
-								<UserMessage>{turn.prompt}</UserMessage>
+								<UserMessage priority={messagePriority}>{turn.prompt}</UserMessage>
 							</>
 						);
 					} else {
 						return (
 							<>
-								{turn.result.metadata?.toolCallsMetadata && <ToolCalls toolCallRounds={turn.result.metadata.toolCallsMetadata.toolCallRounds} toolInvocationToken={this.props.toolInvocationToken} extensionContext={this.props.extensionContext} />}
-								{this.renderChatResponseTurn(turn)}
+								{turn.result.metadata?.toolCallsMetadata && <ToolCalls priority={1} toolCallRounds={turn.result.metadata.toolCallsMetadata.toolCallRounds} toolInvocationToken={this.props.toolInvocationToken} extensionContext={this.props.extensionContext} />}
+								{this.renderChatResponseTurn(turn, messagePriority)}
 							</>
 						);
 					}
@@ -196,7 +199,7 @@ class History extends PromptElement<HistoryProps, void> {
 		</PrioritizedList>
 	}
 
-	private renderChatResponseTurn(turn: vscode.ChatResponseTurn) {
+	private renderChatResponseTurn(turn: vscode.ChatResponseTurn, priority: number) {
 		const responseText = turn.response
 			.map((part) => {
 				if (part instanceof vscode.ChatResponseMarkdownPart) {
@@ -207,7 +210,7 @@ class History extends PromptElement<HistoryProps, void> {
 			})
 			.join('');
 
-		return <AssistantMessage>{responseText}</AssistantMessage>;
+		return <AssistantMessage priority={priority}>{responseText}</AssistantMessage>;
 	}
 }
 
