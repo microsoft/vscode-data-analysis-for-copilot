@@ -25,7 +25,7 @@ export class PyodideRemoteKernel {
         this._options = options;
         const originalFetch = globalThis.fetch;
         globalThis.fetch = async (input: string | URL | Request, init?: RequestInit) => {
-            // console.error(`Fetching ${input}`);
+            console.log(`Pyodide Fetching ${input}`);
             if (typeof input === 'string') {
                 const url = options.pipliteUrls.find((url) => url.toLowerCase().startsWith(input.toLowerCase()));
                 if (url) {
@@ -106,17 +106,17 @@ export class PyodideRemoteKernel {
     }
 
     protected async initKernel(options: IPyodideWorkerKernel.IOptions): Promise<void> {
-        const preloaded = (options.loadPyodideOptions || {}).packages || [];
+        const packages = (options.loadPyodideOptions || {}).packages || [];
 
-        const toLoad = ['ssl', 'sqlite3', 'ipykernel', 'comm', 'pyodide_kernel', 'ipython'];
+        const toLoad = Array.from(
+            new Set(['ssl', 'sqlite3', 'ipykernel', 'comm', 'pyodide_kernel', 'ipython'].concat(packages))
+        );
 
         const scriptLines: string[] = [];
 
         // use piplite for packages that weren't pre-loaded
         for (const pkgName of toLoad) {
-            if (!preloaded.includes(pkgName)) {
-                scriptLines.push(`await piplite.install('${pkgName}', keep_going=True)`);
-            }
+            scriptLines.push(`await piplite.install('${pkgName}', keep_going=True)`);
         }
 
         // import the kernel

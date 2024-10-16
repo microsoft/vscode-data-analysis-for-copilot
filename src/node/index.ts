@@ -23,7 +23,17 @@ export class Kernel {
      * @param pyodidePath Path to the pyodide assets directory.
      * @param workerPath Path to th comlink.worker.js file.
      */
-    constructor(pyodidePath: string, workerPath: string, location: string) {
+    constructor({
+        pyodidePath,
+        workerPath,
+        location,
+        packages
+    }: {
+        pyodidePath: string;
+        workerPath: string;
+        location: string;
+        packages: string[];
+    }) {
         const separator = pyodidePath.includes('/') ? '/' : '\\';
         this.kernel = new PyodideKernel({
             baseUrl: joinPath(separator, pyodidePath),
@@ -38,7 +48,7 @@ export class Kernel {
             id: new Date().getTime().toString(),
             loadPyodideOptions: {
                 lockFileURL: joinPath(separator, pyodidePath, 'pyodide-lock.json'),
-                packages: ['matplotlib', 'pandas']
+                packages: Array.from(new Set(['matplotlib', 'pandas'].concat(packages)))
             },
             name: 'pyodide',
             workerPath,

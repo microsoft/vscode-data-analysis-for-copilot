@@ -29,7 +29,6 @@ export abstract class BasePyodideKernel extends BaseKernel implements IKernel {
         super(options);
         this._worker = this.initWorker(options);
         this.syncMessaging = new SyncMessaging(this._worker);
-        this._worker.postMessage({ Init: 123 });
         this._remoteKernel = this.initRemote(options);
     }
 
