@@ -2,15 +2,57 @@
  *  Copyright (c) Microsoft Corporation and GitHub. All rights reserved.
  *--------------------------------------------------------------------------------------------*/
 
-import { renderPrompt } from '@vscode/prompt-tsx';
+import { ChatMessage, ChatRole, HTMLTracer, PromptRenderer } from '@vscode/prompt-tsx';
 import * as vscode from 'vscode';
-import { DataAgentPrompt, isFinalUserMessageInResponseToToolCall, isUserMessageWithImageFromToolCall, ToolCallRound, ToolResultMetadata, TsxToolUserMetadata } from './base';
+import { DataAgentPrompt, isFinalUserMessageInResponseToToolCall, isUserMessageWithImageFromToolCall, PromptProps, ToolCallRound, ToolResultMetadata, TsxToolUserMetadata } from './base';
 
 const DATA_AGENT_PARTICIPANT_ID = 'dachat.data';
 const MODEL_SELECTOR: vscode.LanguageModelChatSelector = {
 	vendor: 'copilot',
 	family: 'gpt-4o'
 };
+
+export function toVsCodeChatMessages(messages: ChatMessage[]) {
+	return messages.map(m => {
+		switch (m.role) {
+			case ChatRole.Assistant:
+				{
+					const message: vscode.LanguageModelChatMessage = vscode.LanguageModelChatMessage.Assistant(
+						m.content,
+						m.name
+					);
+					if (m.tool_calls) {
+						message.content2 = [m.content];
+						message.content2.push(
+							...m.tool_calls.map(
+								tc =>
+									new vscode.LanguageModelToolCallPart(tc.function.name, tc.id, JSON.parse(tc.function.arguments))
+							)
+						);
+					}
+					return message;
+				}
+			case ChatRole.User:
+				return vscode.LanguageModelChatMessage.User(m.content, m.name);
+			case ChatRole.Function: {
+				const message: vscode.LanguageModelChatMessage = vscode.LanguageModelChatMessage.User('');
+				message.content2 = [new vscode.LanguageModelToolResultPart(m.name, m.content)];
+				return message;
+			}
+			case ChatRole.Tool: {
+				{
+					const message: vscode.LanguageModelChatMessage = vscode.LanguageModelChatMessage.User(m.content);
+					message.content2 = [new vscode.LanguageModelToolResultPart(m.tool_call_id!, m.content)];
+					return message;
+				}
+			}
+			default:
+				throw new Error(
+					`Converting chat message with role ${m.role} to VS Code chat message is not supported.`
+				);
+		}
+	});
+}
 
 export class DataAgent implements vscode.Disposable {
 	private _disposables: vscode.Disposable[] = [];
@@ -49,6 +91,30 @@ export class DataAgent implements vscode.Disposable {
 			}
 		});
 	}
+
+	private async _renderMessages(chat: vscode.LanguageModelChat, props: PromptProps, stream: vscode.ChatResponseStream) {
+		const renderer = new PromptRenderer({ modelMaxPromptTokens: chat.maxInputTokens }, DataAgentPrompt, props, {
+			tokenLength: async (text, _token) => {
+				return chat.countTokens(text);
+			},
+			countMessageTokens: async (message: ChatMessage) => {
+				return chat.countTokens(message.content);
+			}
+		});
+		const tracer = new HTMLTracer();
+		renderer.tracer = tracer;
+		const result = await renderer.render();
+
+		if (this.extensionContext.extensionMode === vscode.ExtensionMode.Development) {
+			const server = await tracer.serveHTML();
+			console.log('Server address:', server.address);
+			const serverUri = vscode.Uri.parse(server.address);
+			stream.reference(serverUri);
+		}
+
+		return result;
+	}
+
 	public async handle(
 		request: vscode.ChatRequest,
 		chatContext: vscode.ChatContext,
@@ -78,17 +144,9 @@ export class DataAgent implements vscode.Disposable {
 			justification: 'Analyzing data to provide insights and recommendations.'
 		};
 
-		const prompt = await renderPrompt(
-			DataAgentPrompt,
-			{ userQuery: request.prompt, references: request.references, history: chatContext.history, currentToolCallRounds: [], toolInvocationToken: request.toolInvocationToken, extensionContext: this.extensionContext },
-			{ modelMaxPromptTokens: chat.maxInputTokens },
-			chat
-		);
-
-		let messages: vscode.LanguageModelChatMessage[] = prompt.messages as vscode.LanguageModelChatMessage[];
-
+		const result = await this._renderMessages(chat, { userQuery: request.prompt, references: request.references, history: chatContext.history, currentToolCallRounds: [], toolInvocationToken: request.toolInvocationToken, extensionContext: this.extensionContext }, stream);
+		let messages = toVsCodeChatMessages(result.messages);
 		const toolReferences = [...request.toolReferences];
-
 		const toolCallRounds: ToolCallRound[] = [];
 
 		const runWithFunctions = async (): Promise<void> => {
@@ -159,16 +217,10 @@ export class DataAgent implements vscode.Disposable {
 				};
 				toolCallRounds.push(currentRound);
 
-				const result = (await renderPrompt(
-					DataAgentPrompt,
-					{ userQuery: request.prompt, references: request.references, history: chatContext.history, currentToolCallRounds: toolCallRounds, toolInvocationToken: request.toolInvocationToken, extensionContext: this.extensionContext },
-					{ modelMaxPromptTokens: chat.maxInputTokens },
-					chat
-				));
-
-				messages = result.messages;
+				const result = await this._renderMessages(chat, { userQuery: request.prompt, references: request.references, history: chatContext.history, currentToolCallRounds: toolCallRounds, toolInvocationToken: request.toolInvocationToken, extensionContext: this.extensionContext }, stream);
+				messages = toVsCodeChatMessages(result.messages);
 				console.log('Token count', result.tokenCount);
-				const toolResultMetadata = result.metadatas.getAll(ToolResultMetadata)
+				const toolResultMetadata = result.metadata.getAll(ToolResultMetadata)
 				if (toolResultMetadata?.length) {
 					toolResultMetadata.forEach(meta => {
 						if (currentRound.toolCalls.find(tc => tc.toolCallId === meta.toolCallId)) {
