@@ -58,14 +58,7 @@ export class DataAgent implements vscode.Disposable {
 	private _disposables: vscode.Disposable[] = [];
 	private readonly generatedCode = new Map<string, string>();
 	constructor(readonly extensionContext: vscode.ExtensionContext) {
-		this._disposables.push(vscode.chat.createChatParticipant(DATA_AGENT_PARTICIPANT_ID, async (request: vscode.ChatRequest,
-			chatContext: vscode.ChatContext,
-			stream: vscode.ChatResponseStream,
-			token: vscode.CancellationToken
-		) => {
-			return this.handle(request, chatContext, stream, token);
-		}));
-
+		this._disposables.push(vscode.chat.createChatParticipant(DATA_AGENT_PARTICIPANT_ID, this.handle.bind(this)));
 		this._disposables.push(vscode.commands.registerCommand('ada.showExecutedPythonCode', async (executionId: string) => {
 			const code = this.generatedCode.get(executionId);
 			if (code) {

@@ -32,23 +32,29 @@
             }
         },
 		{
-			"type": "npm",
-			"script": "watch-tests",
-			"problemMatcher": "$tsc-watch",
-			"isBackground": true,
-			"presentation": {
-				"reveal": "never",
-				"group": "watchers"
-			},
-			"group": "build"
-		},
+            "label": "watch-tests",
+            "dependsOn": [
+                "npm: watch-tests"
+            ],
+            "presentation": {
+                "reveal": "never",
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
 		{
-			"label": "tasks: watch-tests",
-			"dependsOn": [
-				"npm: watch",
-				"npm: watch-tests"
-			],
-			"problemMatcher": []
-		}
+            "type": "npm",
+            "script": "watch-tests",
+            "group": "build",
+            "problemMatcher": "$tsc-watch",
+            "isBackground": true,
+            "label": "npm: watch-tests",
+            "presentation": {
+                "group": "watch",
+                "reveal": "never"
+            }
+        }
 	]
 }

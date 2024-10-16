@@ -6,6 +6,7 @@ export default defineConfig({
 	mocha: {
 		timeout: 600_000
 	},
+	workspaceFolder: 'scenarios',
 	platform:'desktop',
 	useInstallation:{
 		fromMachine: true

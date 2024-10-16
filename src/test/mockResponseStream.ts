@@ -6,10 +6,6 @@ import { ChatResponseAnchorPart, ChatResponseCommandButtonPart, type ChatRespons
 
 export class MockChatResponseStream implements ChatResponseStream {
 	public readonly parts: ChatResponsePart[] = [];
-	public static instance: MockChatResponseStream;
-	constructor(private readonly stream: ChatResponseStream) {
-		MockChatResponseStream.instance = this;
-	}
 	clear() {
 		this.parts.length = 0;
 	}
@@ -22,34 +18,27 @@ export class MockChatResponseStream implements ChatResponseStream {
 			}
 		}
 		this.parts.push(new ChatResponseMarkdownPart(value));
-		this.stream.markdown(value);
 	}
 	anchor(value: Uri | Location, title?: string): void {
 		this.parts.push(new ChatResponseAnchorPart(value, title));
-		this.stream.anchor(value, title);
 	}
 	button(command: Command): void {
 		this.parts.push(new ChatResponseCommandButtonPart(command));
-		this.stream.button(command);
 	}
 	filetree(value: ChatResponseFileTree[], baseUri: Uri): void {
 		this.parts.push(new ChatResponseFileTreePart(value, baseUri));
-		this.stream.filetree(value, baseUri);
 	}
 	progress(value: string): void {
 		this.parts.push(new ChatResponseProgressPart(value));
-		this.stream.progress(value);
 	}
 	reference(value: Uri | Location, iconPath?: Uri | ThemeIcon | { light: Uri; dark: Uri; }): void {
 		this.parts.push(new ChatResponseReferencePart(value, iconPath));
-		this.stream.reference(value, iconPath);
 	}
 	push(part: ChatResponsePart): void {
 		if (part instanceof ChatResponseMarkdownPart) {
 			this.markdown(part.value);
 		} else {
 			this.parts.push(part);
-			this.stream.push(part);
 		}
 	}
 }

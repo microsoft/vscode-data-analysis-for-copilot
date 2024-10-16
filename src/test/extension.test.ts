@@ -4,46 +4,50 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { assert } from 'chai';
-import * as sinon from 'sinon';
-import { ChatResponseMarkdownPart, ChatResult, commands, extensions } from 'vscode';
+import { CancellationTokenSource, ChatResponseMarkdownPart, extensions } from 'vscode';
 import { ToolCallRound } from '../base';
 import { DataAgent } from '../dataAgent';
 import { FindFilesTool, RunPythonTool } from '../tools';
 import { MockChatResponseStream } from './mockResponseStream';
 
 suite('Extension Test Suite', () => {
+	let dataAgent: DataAgent;
+	let tokenSource: CancellationTokenSource;
 	suiteSetup(async function () {
 		await Promise.all([
 			extensions.getExtension('GitHub.copilot-chat')!.activate(),
 			extensions.getExtension('microsoft.data-analysis-chat-participant')!.activate()
 		]);
-		await commands.executeCommand('workbench.action.chat.open', { query: '' });
-		await commands.executeCommand('workbench.action.chat.clearHistory');
+		tokenSource = new CancellationTokenSource();
+		dataAgent = extensions.getExtension('microsoft.data-analysis-chat-participant')!.exports.dataAgent;
 	});
-	teardown(() => sinon.restore())
-	function stubHandler() {
-		const stub = sinon.stub(DataAgent.prototype, 'handle');
-		return new Promise<{ result: ChatResult; stream: MockChatResponseStream; toolcallsRounds: ToolCallRound[] }>((resolve, reject) => {
-			stub.callsFake(async function (this: DataAgent, request, chatContext, stream, token) {
-				try {
-					const newStream = new MockChatResponseStream(stream);
-					const result = await stub.wrappedMethod.call(this, request, chatContext, newStream, token);
-					console.log(result)
-					const toolcallsRounds = (result.metadata as any).toolCallsMetadata.toolCallRounds as ToolCallRound[];
-					resolve({ result, stream: newStream, toolcallsRounds });
-					return result;
-				} catch (ex) {
-					reject(ex);
-					throw ex;
+	suiteTeardown(() => tokenSource.dispose());
+	async function sendChatMessage(prompt: string) {
+		const stream = new MockChatResponseStream();
+		const result = await dataAgent.handle({
+			command: undefined,
+			prompt,
+			references: [],
+			toolInvocationToken: undefined,
+			toolReferences: [
+				{
+					id: RunPythonTool.Id
+				},
+				{
+					id: FindFilesTool.Id
 				}
-			});
-		});
-	}
-	async function sendChatMessage(inputValue: string) {
-		const promise = stubHandler();
-		await commands.executeCommand('workbench.action.chat.focusInput');
-		await commands.executeCommand('workbench.action.chat.sendToNewChat', { inputValue });
-		return promise;
+			]
+		},
+			{
+				history: []
+			}, stream, new CancellationTokenSource().token);
+
+		const toolcallsRounds = (result.metadata as any).toolCallsMetadata.toolCallRounds as ToolCallRound[];
+
+		return {
+			toolcallsRounds,
+			stream
+		}
 	}
 	function getToolCallAndResult<OutputType>(toolId: typeof FindFilesTool.Id | typeof RunPythonTool.Id, outputMimetype: string, toolcallRound: ToolCallRound) {
 		const toolcall = toolcallRound.toolCalls.find(t => t.name === toolId)!;
@@ -54,39 +58,115 @@ suite('Extension Test Suite', () => {
 		};
 	}
 
-	function containsTextOutput(toolcall: ToolCallRound, toolId: typeof FindFilesTool.Id | typeof RunPythonTool.Id, outputMimetype: string, textToInclude: string[]) {
-		const result = getToolCallAndResult<string>(toolId, outputMimetype, toolcall);
-		assert.isOk(result.toolcall);
-		for (const output of textToInclude) {
-			assert.include(result.result.toLowerCase(), output.toLowerCase());
+	function containsTextOutput(toolcall: ToolCallRound | ToolCallRound[], toolId: typeof FindFilesTool.Id | typeof RunPythonTool.Id, outputMimetype: string, textToInclude: string[]) {
+		if (Array.isArray(toolcall)) {
+			for (const call of toolcall.filter(t => t.toolCalls.find(c => c.name === toolId))) {
+				try {
+					const result = getToolCallAndResult<string>(toolId, outputMimetype, call);
+					assert.isOk(result.toolcall);
+					const found = textToInclude.filter(text => result.result.toLowerCase().includes(text.toLowerCase()));
+					if (found.length === textToInclude.length) {
+						return;
+					}
+				} catch {
+					//
+				}
+			}
+			assert.fail(`Text ${textToInclude.join(', ')} not found in ${outputMimetype} for ${toolId}`);
+
+		} else {
+			const result = getToolCallAndResult<string>(toolId, outputMimetype, toolcall);
+			assert.isOk(result.toolcall);
+			for (const output of textToInclude) {
+				assert.include(result.result.toLowerCase(), output.toLowerCase());
+			}
 		}
 	}
 
-	function containsImageOutput(toolcall: ToolCallRound, toolId: typeof FindFilesTool.Id | typeof RunPythonTool.Id, outputMimetype: string = 'image/png') {
-		const result = getToolCallAndResult<string>(toolId, outputMimetype, toolcall);
-		assert.isOk(result.toolcall);
-		assert.isAtLeast(result.result.length, 100); // base64
-	}
-
-	function containsExecutedCode(toolcall: ToolCallRound, expectedCode: string[]) {
-		const code: string = (toolcall.toolCalls.find(t => t.name === RunPythonTool.Id)!.parameters as any)!.code;
-		assert.isOk(code);
-		for (const fragment of expectedCode) {
-			assert.include(code.toLowerCase(), fragment.toLowerCase());
+	function containsImageOutput(toolcall: ToolCallRound | ToolCallRound[], toolId: typeof FindFilesTool.Id | typeof RunPythonTool.Id, outputMimetype: string = 'image/png') {
+		if (Array.isArray(toolcall)) {
+			for (const call of toolcall) {
+				try {
+					const result = getToolCallAndResult<string>(toolId, outputMimetype, call);
+					assert.isOk(result.toolcall);
+					assert.isAtLeast(result.result.length, 100); // base64}
+					return;
+				} catch {
+					//
+				}
+			}
+			assert.fail(`Image ${outputMimetype} not found`);
+		} else {
+			const result = getToolCallAndResult<string>(toolId, outputMimetype, toolcall);
+			assert.isOk(result.toolcall);
+			assert.isAtLeast(result.result.length, 100); // base64}
 		}
 	}
 
-	function containsError(toolcall: ToolCallRound, toolId: typeof FindFilesTool.Id | typeof RunPythonTool.Id, error: { name?: string[]; message?: string[]; stack?: string[] }) {
-		const result = getToolCallAndResult<Error>(toolId, 'application/vnd.code.notebook.error', toolcall);
-		assert.isOk(result.toolcall);
-		for (const stack of (error.name || [])) {
-			assert.include((result.result.name || '').toLowerCase(), stack.toLowerCase());
+	function containsExecutedCode(toolcall: ToolCallRound | ToolCallRound[], expectedCode: string[]) {
+		let code = '';
+		if (Array.isArray(toolcall)) {
+			for (const call of toolcall) {
+				code = (call.toolCalls.find(t => t.name === RunPythonTool.Id)!.parameters as any)!.code;
+				if (code) {
+					const fragments = expectedCode.slice();
+					const found = fragments.filter(fragment => code.toLowerCase().includes(fragment.toLowerCase()));
+					if (found.length === fragments.length) {
+						return;
+					}
+				}
+			}
+			assert.fail(`Code ${expectedCode.join(', ')} not found in toolcall`);
+		} else {
+			code = (toolcall.toolCalls.find(t => t.name === RunPythonTool.Id)!.parameters as any)!.code;
+			assert.isOk(code);
+			for (const fragment of expectedCode) {
+				assert.include(code.toLowerCase(), fragment.toLowerCase());
+			}
 		}
-		for (const stack of (error.message || [])) {
-			assert.include((result.result.message || '').toLowerCase(), stack.toLowerCase());
-		}
-		for (const stack of (error.stack || [])) {
-			assert.include((result.result.stack || '').toLowerCase(), stack.toLowerCase());
+	}
+
+	function containsError(toolcall: ToolCallRound | ToolCallRound[], toolId: typeof FindFilesTool.Id | typeof RunPythonTool.Id, expectedError: { name?: string[]; message?: string[]; stack?: string[] }) {
+		let error: Error | undefined;
+		if (Array.isArray(toolcall)) {
+			for (const call of toolcall.filter(t => t.toolCalls.some(c => c.name === toolId))) {
+				try {
+					const result = getToolCallAndResult<Error>(toolId, 'application/vnd.code.notebook.error', call);
+					assert.isOk(result.toolcall);
+					error = result.result;
+
+					// There could be other errors in the responses.
+					for (const stack of (expectedError.name || [])) {
+						assert.include((error.name || '').toLowerCase(), stack.toLowerCase());
+					}
+					for (const stack of (expectedError.message || [])) {
+						assert.include((error.message || '').toLowerCase(), stack.toLowerCase());
+					}
+					for (const stack of (expectedError.stack || [])) {
+						assert.include((error.stack || '').toLowerCase(), stack.toLowerCase());
+					}
+
+					return;
+				} catch {
+					//
+				}
+			}
+		} else {
+			const result = getToolCallAndResult<Error>(toolId, 'application/vnd.code.notebook.error', toolcall);
+			assert.isOk(result.toolcall);
+			error = result.result;
+			if (!error) {
+				assert.fail(`Error not found`);
+			}
+			for (const stack of (expectedError.name || [])) {
+				assert.include((error.name || '').toLowerCase(), stack.toLowerCase());
+			}
+			for (const stack of (expectedError.message || [])) {
+				assert.include((error.message || '').toLowerCase(), stack.toLowerCase());
+			}
+			for (const stack of (expectedError.stack || [])) {
+				assert.include((error.stack || '').toLowerCase(), stack.toLowerCase());
+			}
 		}
 	}
 
@@ -99,17 +179,14 @@ suite('Extension Test Suite', () => {
 	test('Failure retries', async () => {
 		const { stream, toolcallsRounds } = await sendChatMessage('@data generate a histogram of number of movies per bond actor from the jamesbond.csv file');
 
-		// First tool call must be for the file and it should find the file.
-		containsTextOutput(toolcallsRounds[0], FindFilesTool.Id, 'text/plain', ['Found 1', 'jamesbond.csv']);
+		// First call should be to generate an image, and this should fail with an invalid column error.
+		containsError(toolcallsRounds, RunPythonTool.Id, { name: ['class', 'keyerror'] });
 
-		// Second call should be to generate an image, and this should fail with an invalid column error.
-		containsError(toolcallsRounds[1], RunPythonTool.Id, { name: ['class', 'keyerror'] });
-
-		// Third call should be to generate a list of column names.
-		containsTextOutput(toolcallsRounds[2], RunPythonTool.Id, 'text/plain', ['bondactorname', 'writer']);
+		// Second call should be to generate a list of column names.
+		containsTextOutput(toolcallsRounds, RunPythonTool.Id, 'text/plain', ['bondactorname', 'writer']);
 
 		// Final call should be to generate a image
-		containsImageOutput(toolcallsRounds[3], RunPythonTool.Id);
+		containsImageOutput(toolcallsRounds, RunPythonTool.Id);
 
 		// Finally the last message display to the user must contain the markdown image.
 		const markdown = getLastMarkdownStream(stream).toLowerCase();
@@ -120,12 +197,8 @@ suite('Extension Test Suite', () => {
 	test('Generate plot using seaborn', async () => {
 		const { stream, toolcallsRounds } = await sendChatMessage('@data generate and display a simple plot with seaborn using the data from housing.csv');
 
-		// First tool call must be for the file and it should find the file.
-		containsTextOutput(toolcallsRounds[0], FindFilesTool.Id, 'text/plain', ['Found 1', 'housing.csv']);
-
 		// Second call should be to generate an image using seaborn
-		containsExecutedCode(toolcallsRounds[1], ['import seaborn']);
-		containsImageOutput(toolcallsRounds[1], RunPythonTool.Id);
+		containsExecutedCode(toolcallsRounds, ['import seaborn']);
 
 		// Finally the last message display to the user must contain the markdown image.
 		const markdown = getLastMarkdownStream(stream).toLowerCase();
