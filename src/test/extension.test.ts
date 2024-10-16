@@ -8,8 +8,8 @@ import * as sinon from 'sinon';
 import { ChatResponseMarkdownPart, ChatResult, commands, extensions } from 'vscode';
 import { ToolCallRound } from '../base';
 import { DataAgent } from '../dataAgent';
-import { MockChatResponseStream } from './mockResponseStream';
 import { FindFilesTool, RunPythonTool } from '../tools';
+import { MockChatResponseStream } from './mockResponseStream';
 
 suite('Extension Test Suite', () => {
 	suiteSetup(async function () {
@@ -62,10 +62,18 @@ suite('Extension Test Suite', () => {
 		}
 	}
 
-	function containsImageOutput(toolcall: ToolCallRound, toolId: typeof FindFilesTool.Id | typeof RunPythonTool.Id, outputMimetype: string ='image/png') {
+	function containsImageOutput(toolcall: ToolCallRound, toolId: typeof FindFilesTool.Id | typeof RunPythonTool.Id, outputMimetype: string = 'image/png') {
 		const result = getToolCallAndResult<string>(toolId, outputMimetype, toolcall);
 		assert.isOk(result.toolcall);
 		assert.isAtLeast(result.result.length, 100); // base64
+	}
+
+	function containsExecutedCode(toolcall: ToolCallRound, expectedCode: string[]) {
+		const code: string = (toolcall.toolCalls.find(t => t.name === RunPythonTool.Id)!.parameters as any)!.code;
+		assert.isOk(code);
+		for (const fragment of expectedCode) {
+			assert.include(code.toLowerCase(), fragment.toLowerCase());
+		}
 	}
 
 	function containsError(toolcall: ToolCallRound, toolId: typeof FindFilesTool.Id | typeof RunPythonTool.Id, error: { name?: string[]; message?: string[]; stack?: string[] }) {
@@ -89,7 +97,7 @@ suite('Extension Test Suite', () => {
 	}
 
 	test('Failure retries', async () => {
-		const { stream, toolcallsRounds } = await sendChatMessage('@ada generate a histogram of number of movies per bond actor from the jamesbond.csv file');
+		const { stream, toolcallsRounds } = await sendChatMessage('@data generate a histogram of number of movies per bond actor from the jamesbond.csv file');
 
 		// First tool call must be for the file and it should find the file.
 		containsTextOutput(toolcallsRounds[0], FindFilesTool.Id, 'text/plain', ['Found 1', 'jamesbond.csv']);
@@ -102,6 +110,22 @@ suite('Extension Test Suite', () => {
 
 		// Final call should be to generate a image
 		containsImageOutput(toolcallsRounds[3], RunPythonTool.Id);
+
+		// Finally the last message display to the user must contain the markdown image.
+		const markdown = getLastMarkdownStream(stream).toLowerCase();
+		assert.include(markdown, '.png)') // File will be png
+		assert.include(markdown, `result-${RunPythonTool.Id}`.toLowerCase()) // File name has a specific format.
+	});
+
+	test('Generate plot using seaborn', async () => {
+		const { stream, toolcallsRounds } = await sendChatMessage('@data generate and display a simple plot with seaborn using the data from housing.csv');
+
+		// First tool call must be for the file and it should find the file.
+		containsTextOutput(toolcallsRounds[0], FindFilesTool.Id, 'text/plain', ['Found 1', 'housing.csv']);
+
+		// Second call should be to generate an image using seaborn
+		containsExecutedCode(toolcallsRounds[1], ['import seaborn']);
+		containsImageOutput(toolcallsRounds[1], RunPythonTool.Id);
 
 		// Finally the last message display to the user must contain the markdown image.
 		const markdown = getLastMarkdownStream(stream).toLowerCase();
