@@ -13,3 +13,8 @@ export interface IWorker {
      */
     terminate(): void;
 }
+
+export interface ILogger {
+    info(message: string, ...args: any[]): void;
+    error(message: string, ...args: any[]): void;
+}

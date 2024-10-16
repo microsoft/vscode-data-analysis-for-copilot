@@ -25,7 +25,7 @@ export class PyodideRemoteKernel {
         this._options = options;
         const originalFetch = globalThis.fetch;
         globalThis.fetch = async (input: string | URL | Request, init?: RequestInit) => {
-            console.log(`Pyodide Fetching ${input}`);
+            this.log('info', `Pyodide Fetching ${input}`);
             if (typeof input === 'string') {
                 const url = options.pipliteUrls.find((url) => url.toLowerCase().startsWith(input.toLowerCase()));
                 if (url) {
@@ -53,6 +53,18 @@ export class PyodideRemoteKernel {
         this._initializer?.resolve();
     }
 
+    protected log(type: 'error' | 'info', message: string, ...args: any[]): void {
+        if (!this._sendWorkerMessage) {
+            console[type](message, ...args);
+        } else {
+            this._sendWorkerMessage({
+                type,
+                message,
+                args: args
+            });
+        }
+    }
+
     protected async initRuntime(options: IPyodideWorkerKernel.IOptions): Promise<void> {
         const { pyodideUrl, indexUrl } = options;
         const pyodideModule: typeof Pyodide = await import(/* webpackIgnore: true */ pyodideUrl);
@@ -62,8 +74,8 @@ export class PyodideRemoteKernel {
             // packageCacheDir: '/Users/donjayamanne/Downloads/cache',
             fullStdLib: true,
             // ...options.loadPyodideOptions,
-            stdout(_msg: string) {
-                // sendMessage(`Python Output >> ${msg}`);
+            stdout: (msg: string) => {
+                this.log('info', `Python Output >> ${msg}`);
             },
             stdin: () => {
                 // sendMessage('Python Input Requested');
@@ -82,7 +94,14 @@ export class PyodideRemoteKernel {
         const preloaded = (loadPyodideOptions || {}).packages || [];
 
         if (!preloaded.includes('micropip')) {
-            await this._pyodide.loadPackage(['micropip']);
+            await this._pyodide.loadPackage(['micropip'], {
+                messageCallback: (msg: string) => {
+                    this.log('info', `Micropip Output >> ${msg}`);
+                },
+                errorCallback: (msg: string) => {
+                    this.log('error', `Micropip Error >> ${msg}`);
+                }
+            });
         }
 
         if (!preloaded.includes('piplite')) {
@@ -198,6 +217,16 @@ export class PyodideRemoteKernel {
      */
     registerCallback(callback: (msg: any) => void): void {
         this._sendWorkerMessage = callback;
+        const logMessage = (type: 'error' | 'info', ...args: any[]) => {
+            if (args.length) {
+                const message = args.shift().toString();
+                this.log(type, message.toString(), ...args.map((arg) => arg.toString()));
+            }
+        };
+        console.log = (...args: any[]) => logMessage('info', ...args);
+        console.info = (...args: any[]) => logMessage('info', ...args);
+        console.debug = (...args: any[]) => logMessage('info', ...args);
+        console.warn = (...args: any[]) => logMessage('info', ...args);
     }
 
     /**

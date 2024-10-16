@@ -10,7 +10,7 @@ import { BaseKernel, IKernel } from '@jupyterlite/kernel';
 import { IPyodideWorkerKernel, IRemotePyodideWorkerKernel } from './tokens';
 import { pipliteWheelUrl } from './_pypi';
 import { SyncMessaging } from './syncMessagingMain';
-import type { IWorker } from './types';
+import type { ILogger, IWorker } from './types';
 
 /**
  * A kernel that executes Python code with Pyodide.
@@ -20,6 +20,7 @@ export abstract class BasePyodideKernel extends BaseKernel implements IKernel {
     public get remoteKernel() {
         return this._remoteKernel;
     }
+    public readonly logger: ILogger;
     /**
      * Instantiate a new PyodideKernel
      *
@@ -27,6 +28,7 @@ export abstract class BasePyodideKernel extends BaseKernel implements IKernel {
      */
     constructor(options: PyodideKernel.IOptions) {
         super(options);
+        this.logger = options.logger;
         this._worker = this.initWorker(options);
         this.syncMessaging = new SyncMessaging(this._worker);
         this._remoteKernel = this.initRemote(options);
@@ -113,6 +115,14 @@ export abstract class BasePyodideKernel extends BaseKernel implements IKernel {
         }
 
         switch (msg.type) {
+            case 'error': {
+                this.logger.error(msg.message, ...(msg.args || []));
+                break;
+            }
+            case 'info': {
+                this.logger.info(msg.message, ...(msg.args || []));
+                break;
+            }
             case 'stream': {
                 const bundle = msg.bundle ?? { name: 'stdout', text: '' };
                 this.stream(bundle, msg.parentHeader);
@@ -372,5 +382,7 @@ export namespace PyodideKernel {
          * Path to the worker script file to be loaded in the worker.
          */
         workerPath: string;
+
+        logger: ILogger;
     }
 }

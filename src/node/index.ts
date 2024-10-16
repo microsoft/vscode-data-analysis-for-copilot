@@ -14,6 +14,11 @@ type TextOutputs = Partial<Record<'text/plain' | 'image/png' | 'text/html', stri
 type ErrorOutput = { 'application/vnd.code.notebook.error': Error };
 type ExecuteResult = TextOutputs & Partial<ErrorOutput>;
 
+export interface ILogger {
+    info(message: string, ...args: any[]): void;
+    error(message: string, ...args: any[]): void;
+}
+
 export class Kernel {
     private readonly outputs: Record<string, any>[] = [];
     private completed?: Deferred<void>;
@@ -27,12 +32,14 @@ export class Kernel {
         pyodidePath,
         workerPath,
         location,
-        packages
+        packages,
+        logger
     }: {
         pyodidePath: string;
         workerPath: string;
         location: string;
         packages: string[];
+        logger: ILogger;
     }) {
         const separator = pyodidePath.includes('/') ? '/' : '\\';
         this.kernel = new PyodideKernel({
@@ -41,6 +48,7 @@ export class Kernel {
             indexUrl: joinPath(separator, pyodidePath),
             disablePyPIFallback: false,
             location,
+            logger,
             mountDrive: true,
             pipliteUrls: [`file://${joinPath(separator, pyodidePath, 'pypi', 'all.json')}`],
             pipliteWheelUrl: `file://${joinPath(separator, pyodidePath, 'pypi', 'piplite-0.4.2-py3-none-any.whl')}`,
