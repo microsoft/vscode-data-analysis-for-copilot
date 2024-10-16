@@ -2,9 +2,10 @@
  *  Copyright (c) Microsoft Corporation and GitHub. All rights reserved.
  *--------------------------------------------------------------------------------------------*/
 
+import * as path from 'path';
 import * as vscode from 'vscode';
 import type { Kernel } from '../pyodide/node/index';
-import * as path from 'path';
+import { logger } from './logger';
 
 interface IFindFilesParameters {
 	pattern: string;
@@ -69,7 +70,13 @@ export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParamet
 		this._kernel = new Kernel({
 			pyodidePath: pyodidePath.fsPath, workerPath, location: folder, packages: [
 				vscode.Uri.file(path.join(pyodidePath.fsPath, 'seaborn-0.13.2-py3-none-any.whl')).toString()
-			]
+			],
+			logger: {
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				error: (message: string, ...args: any[]) => logger.error(`Pyodide: ${message}`, ...args),
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				info: (message: string, ...args: any[]) => logger.info(`Pyodide ${message}`, ...args)
+			}
 		});
 	}
 
@@ -81,7 +88,7 @@ export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParamet
 		this.pendingRequests = this.pendingRequests.finally().then(() => this._kernel.execute(code));
 		const result = await this.pendingRequests as Awaited<ReturnType<typeof Kernel.prototype.execute>>;
 
-		console.log(result);
+		logger.debug(`Executing Python Code`, code, result);
 		const resultData: { [key: string]: unknown } = {};
 		if (result && result['text/plain']) {
 			resultData['text/plain'] = result['text/plain'];

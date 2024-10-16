@@ -5,6 +5,7 @@
 import { ChatMessage, ChatRole, HTMLTracer, PromptRenderer } from '@vscode/prompt-tsx';
 import * as vscode from 'vscode';
 import { DataAgentPrompt, isFinalUserMessageInResponseToToolCall, isUserMessageWithImageFromToolCall, PromptProps, ToolCallRound, ToolResultMetadata, TsxToolUserMetadata } from './base';
+import { logger } from './logger';
 
 const DATA_AGENT_PARTICIPANT_ID = 'dachat.data';
 const MODEL_SELECTOR: vscode.LanguageModelChatSelector = {
@@ -100,7 +101,7 @@ export class DataAgent implements vscode.Disposable {
 
 		if (this.extensionContext.extensionMode === vscode.ExtensionMode.Development) {
 			const server = await tracer.serveHTML();
-			console.log('Server address:', server.address);
+			logger.info('Server address:', server.address);
 			const serverUri = vscode.Uri.parse(server.address);
 			stream.reference(serverUri);
 		}
@@ -116,7 +117,7 @@ export class DataAgent implements vscode.Disposable {
 	): Promise<vscode.ChatResult> {
 		const models = await vscode.lm.selectChatModels(MODEL_SELECTOR);
 		if (!models || !models.length) {
-			console.log('NO MODELS');
+			logger.warn('NO MODELS');
 			return {};
 		}
 
@@ -152,7 +153,7 @@ export class DataAgent implements vscode.Disposable {
 				options.tools = allTools;
 			}
 
-			console.log('SENDING REQUEST', messages);
+			logger.debug('SENDING REQUEST', messages);
 			const toolCalls: vscode.LanguageModelToolCallPart[] = [];
 			const pyodideToolCalls = toolCallRounds.map(r => r.toolCalls).flat().filter(tc => tc.name === 'ada-data_runPython');
 			const isFinalResponse = messages.length && isFinalUserMessageInResponseToToolCall(messages[messages.length - 1].content + messages[messages.length - 1].content2);
@@ -164,7 +165,7 @@ export class DataAgent implements vscode.Disposable {
 					if (part instanceof vscode.LanguageModelTextPart) {
 						stream.markdown(part.value);
 					} else if (part instanceof vscode.LanguageModelToolCallPart) {
-						console.log('RECEIVED TOOL CALL', part.name);
+						logger.info('Received tool call', part.name);
 						const tool = vscode.lm.tools.find((tool) => (tool.name === part.name));
 						if (!tool) {
 							// BAD tool choice?
@@ -212,7 +213,7 @@ export class DataAgent implements vscode.Disposable {
 
 				const result = await this._renderMessages(chat, { userQuery: request.prompt, references: request.references, history: chatContext.history, currentToolCallRounds: toolCallRounds, toolInvocationToken: request.toolInvocationToken, extensionContext: this.extensionContext }, stream);
 				messages = toVsCodeChatMessages(result.messages);
-				console.log('Token count', result.tokenCount);
+				logger.info('Token count', result.tokenCount);
 				const toolResultMetadata = result.metadata.getAll(ToolResultMetadata)
 				if (toolResultMetadata?.length) {
 					toolResultMetadata.forEach(meta => {

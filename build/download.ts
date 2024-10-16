@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { spawnSync } from 'child_process';
 import { Presets, SingleBar } from 'cli-progress';
 import { https } from 'follow-redirects';
@@ -49,8 +50,9 @@ type ReleaseInfo = {
 export async function downloadPyodideScripts() {
 	console.log('Downloading pyodide scripts');
 	// `git checkout` will stage the changes, we don't want that. Hence use `git restore`
-	spawnSync('git restore --source=origin/pyodide --worktree resources/pyodide.zip', { cwd: path.join(__dirname, '..'), shell: true });
-	const tarFile = path.join(__dirname, '..', 'resources', 'pyodide.zip');
+	// spawnSync('git restore --source=origin/pyodide --worktree resources/pyodide.zip', { cwd: path.join(__dirname, '..'), shell: true });
+	// const tarFile = path.join(__dirname, '..', 'resources', 'pyodide.zip');
+	const tarFile = '/Users/donjayamanne/Development/vsc/vscode-data-analysis-copilot/resources/pyodide.zip';
 	const dir = path.join(__dirname, '..', 'pyodide');
 	if (!fs.existsSync(dir)) {
 		fs.mkdirSync(dir);

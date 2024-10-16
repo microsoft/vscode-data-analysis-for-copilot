@@ -15,6 +15,7 @@ import {
 import { Chunk, TextChunk, ToolCall, ToolMessage } from '@vscode/prompt-tsx/dist/base/promptElements';
 import * as path from 'path';
 import * as vscode from "vscode";
+import { logger } from './logger';
 
 const userMessageWithWithImageFromToolCall = `Return this image link in your response. Do not modify the markdown image link at all. The path is already absolute local file path, do not put "https" or "blob" in the link`;
 
@@ -253,7 +254,7 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 	private async _renderOneToolCall(toolCall: vscode.LanguageModelToolCallPart, resultsFromCurrentRound: Record<string, vscode.LanguageModelToolResult>, sizing: PromptSizing, toolInvocationToken: vscode.ChatParticipantToolToken | undefined): Promise<PromptPiece> {
 		const tool = vscode.lm.tools.find((tool) => tool.name === toolCall.name);
 		if (!tool) {
-			console.error(`Tool not found: ${toolCall.name}`);
+			logger.error(`Tool not found: ${toolCall.name}`);
 			return <ToolMessage toolCallId={toolCall.toolCallId}>Tool not found</ToolMessage>;
 		}
 
@@ -351,7 +352,7 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 			const encodedPath = encodeURI(imageUri.fsPath);
 			return encodedPath;
 		} catch (ex) {
-			console.error('Error saving image', ex);
+			logger.error('Error saving image', ex);
 			return undefined;
 		}
 	}
