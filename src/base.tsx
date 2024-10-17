@@ -7,10 +7,12 @@ import {
 	BasePromptElementProps,
 	PrioritizedList,
 	PromptElement,
+	PromptElementProps,
 	PromptMetadata,
 	PromptPiece,
+	PromptReference,
 	PromptSizing,
-	UserMessage
+	UserMessage,
 } from '@vscode/prompt-tsx';
 import { Chunk, TextChunk, ToolCall, ToolMessage } from '@vscode/prompt-tsx/dist/base/promptElements';
 import * as path from 'path';
@@ -53,6 +55,89 @@ export interface PromptProps extends BasePromptElementProps {
 	extensionContext: vscode.ExtensionContext;
 }
 
+
+interface PromptReferencesProps extends BasePromptElementProps {
+    references: ReadonlyArray<vscode.ChatPromptReference>;
+    excludeReferences?: boolean;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+class PromptReferences extends PromptElement<PromptReferencesProps, void> {
+    render(_state: void, _sizing: PromptSizing): PromptPiece {
+        return (
+            <UserMessage>
+                {this.props.references.map((ref, _index) => (
+                    <PromptReferenceElement ref={ref} excludeReferences={this.props.excludeReferences} />
+                ))}
+            </UserMessage>
+        );
+    }
+}
+
+interface PromptReferenceProps extends BasePromptElementProps {
+    ref: vscode.ChatPromptReference;
+    excludeReferences?: boolean;
+}
+
+export type TagProps = PromptElementProps<{
+    name: string;
+}>;
+
+export class Tag extends PromptElement<TagProps> {
+    private static readonly _regex = /^[a-zA-Z_][\w.-]*$/;
+
+    render() {
+        const { name } = this.props;
+
+        if (!Tag._regex.test(name)) {
+            throw new Error(`Invalid tag name: ${this.props.name}`);
+        }
+
+        return (
+            <>
+                {'<' + name + '>'}<br />
+                <>
+                    {this.props.children}<br />
+                </>
+                {'</' + name + '>'}<br />
+            </>
+        );
+    }
+}
+
+class PromptReferenceElement extends PromptElement<PromptReferenceProps> {
+    async render(_state: void, _sizing: PromptSizing): Promise<PromptPiece | undefined> {
+        const value = this.props.ref.value;
+        // TODO make context a list of TextChunks so that it can be trimmed
+        if (value instanceof vscode.Uri) {
+            const fileContents = (await vscode.workspace.fs.readFile(value)).toString();
+            return (
+                <Tag name="context">
+                    {!this.props.excludeReferences && <references value={[new PromptReference(value)]} />}
+                    {value.fsPath}:<br />
+                    ``` <br />
+                    {fileContents}<br />
+                    ```<br />
+                </Tag>
+            );
+        } else if (value instanceof vscode.Location) {
+            const rangeText = (await vscode.workspace.openTextDocument(value.uri)).getText(value.range);
+            return (
+                <Tag name="context">
+                    {!this.props.excludeReferences && <references value={[new PromptReference(value)]} /> }
+                    {value.uri.fsPath}:{value.range.start.line + 1}-$<br />
+                    {value.range.end.line + 1}: <br />
+                    ```<br />
+                    {rangeText}<br />
+                    ```
+                </Tag>
+            );
+        } else if (typeof value === 'string') {
+            return <Tag name="context">{value}</Tag>;
+        }
+    }
+}
+
 export class DataAgentPrompt extends PromptElement<PromptProps, void> {
 	render(_state: void, _sizing: PromptSizing) {
 		const shouldStopRetry = this.shouldStopRetry();
@@ -62,6 +147,13 @@ export class DataAgentPrompt extends PromptElement<PromptProps, void> {
 			<>
 				<Instructions history={this.props.history} priority={1000} />
 				<History history={this.props.history} priority={500} flexGrow={1} toolInvocationToken={this.props.toolInvocationToken} extensionContext={this.props.extensionContext} />
+
+                {/* <PromptReferences
+                    references={this.props.references}
+					flexGrow={2}
+                    priority={450}
+                /> */}
+
 				<UserMessage priority={1000}>{userPrompt}</UserMessage>
 				<ToolCalls toolCallRounds={this.props.currentToolCallRounds} priority={1000} toolInvocationToken={this.props.toolInvocationToken} extensionContext={this.props.extensionContext} ></ToolCalls>
 				{shouldStopRetry && <UserMessage>We encountered an error three times. Please present only the last ran attempted code to the user. Instead of performing another function call</UserMessage>}
