@@ -8,9 +8,6 @@ import { ChatCommand, ChatResponseAnchorPart, ChatResponseCommandButtonPart, typ
 export class MockChatResponseStream implements ChatResponseStream {
 	public readonly parts: ChatResponsePart[] = [];
 	public readonly edits = new Map<string, (TextEdit | TextEdit[])[]>();
-	clear() {
-		this.parts.length = 0;
-	}
 	markdown(value: string | MarkdownString): void {
 		if (this.parts.length > 0) {
 			const item = this.parts[this.parts.length - 1];
