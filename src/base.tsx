@@ -12,7 +12,7 @@ import {
 	PromptPiece,
 	PromptReference,
 	PromptSizing,
-	UserMessage,
+	UserMessage
 } from '@vscode/prompt-tsx';
 import { Chunk, TextChunk, ToolCall, ToolMessage } from '@vscode/prompt-tsx/dist/base/promptElements';
 import * as path from 'path';
@@ -68,7 +68,7 @@ interface PromptReferencesProps extends BasePromptElementProps {
 	excludeReferences?: boolean;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 class PromptReferences extends PromptElement<PromptReferencesProps, void> {
 	render(_state: void, _sizing: PromptSizing): PromptPiece {
 		return (
@@ -155,11 +155,11 @@ export class DataAgentPrompt extends PromptElement<PromptProps, void> {
 				<Instructions history={this.props.history} priority={1000} />
 				<History history={this.props.history} priority={500} flexGrow={1} toolInvocationToken={this.props.toolInvocationToken} extensionContext={this.props.extensionContext} />
 
-				{/* <PromptReferences
+				<PromptReferences
                     references={this.props.references}
 					flexGrow={2}
                     priority={450}
-                /> */}
+                />
 
 				<UserMessage priority={1000}>{userPrompt}</UserMessage>
 				<ToolCalls toolCallRounds={this.props.currentToolCallRounds} priority={1000} toolInvocationToken={this.props.toolInvocationToken} extensionContext={this.props.extensionContext} ></ToolCalls>
