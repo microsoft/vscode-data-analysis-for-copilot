@@ -5,11 +5,12 @@
 import * as vscode from 'vscode';
 import { registerCsvCommand } from './csvCommand';
 import { DataAgent } from './dataAgent';
-import { logger } from './logger';
+import { initializeLogger } from './logger';
 import { FindFilesTool, RunPythonTool } from './tools';
 
 export function activate(context: vscode.ExtensionContext) {
 	const dataAgent = new DataAgent(context);
+	const logger = initializeLogger(context);
 	context.subscriptions.push(logger);
 	context.subscriptions.push(dataAgent);
 	context.subscriptions.push(registerCsvCommand());
