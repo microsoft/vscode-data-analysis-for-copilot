@@ -4,7 +4,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { assert } from 'chai';
-import { CancellationTokenSource, ChatResponseMarkdownPart, extensions } from 'vscode';
+import { CancellationTokenSource, ChatResponseMarkdownPart, commands, extensions } from 'vscode';
 import { ToolCallRound } from '../base';
 import { DataAgent } from '../dataAgent';
 import { FindFilesTool, RunPythonTool } from '../tools';
@@ -18,6 +18,7 @@ suite('Extension Test Suite', () => {
 			extensions.getExtension('GitHub.copilot-chat')!.activate(),
 			extensions.getExtension('microsoft.vscode-copilot-data-analysis')!.activate()
 		]);
+		await commands.executeCommand('workbench.action.chat.open');
 		tokenSource = new CancellationTokenSource();
 		dataAgent = extensions.getExtension('microsoft.vscode-copilot-data-analysis')!.exports.dataAgent;
 	});
@@ -175,6 +176,28 @@ suite('Extension Test Suite', () => {
 		return typeof mdPart.value === 'string' ? mdPart.value : mdPart.value.value;
 
 	}
+
+	test('Analyze csv', async () => {
+		const { toolcallsRounds } = await sendChatMessage('@data Analyze the contents of housing.csv file');
+
+		// We must import pandas and open the csv file
+		containsExecutedCode(toolcallsRounds, ['import pandas', 'pd.read_csv', 'housing.csv']);
+	});
+
+	test('Analyze csv and display any images', async () => {
+		const { stream, toolcallsRounds } = await sendChatMessage('@data analyze the data in housing.csv to understand the relationship between the variables and display any images that are generated as a result');
+
+		// We must import pandas and open the csv file
+		containsExecutedCode(toolcallsRounds, ['import pandas', 'pd.read_csv', 'housing.csv']);
+
+		// We must have at least 2 python tool calls.
+		// 1. to load some of the data & gets some basic stats, the next to analyze that and generate some graphs and the like.
+
+		// Finally the last message display to the user must contain a markdown image.
+		const markdown = getLastMarkdownStream(stream).toLowerCase();
+		assert.include(markdown, '.png)') // File will be png
+		assert.include(markdown, `result-${RunPythonTool.Id}`.toLowerCase()) // File name has a specific format.
+	});
 
 	test('Failure retries', async () => {
 		const { stream, toolcallsRounds } = await sendChatMessage('@data generate a histogram of number of movies per bond actor from the jamesbond.csv file');

@@ -73,9 +73,9 @@ export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParamet
 			],
 			logger: {
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				error: (message: string, ...args: any[]) => logger.error(`Pyodide: ${message}`, ...args),
+				error: (message: string, ...args: any[]) => logger.error(`Pyodide => ${message}`, ...args),
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				info: (message: string, ...args: any[]) => logger.info(`Pyodide ${message}`, ...args)
+				info: (message: string, ...args: any[]) => logger.info(`Pyodide => ${message}`, ...args)
 			}
 		});
 	}
@@ -85,10 +85,20 @@ export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParamet
 		_token: vscode.CancellationToken
 	) {
 		const code = sanitizePythonCode(options.parameters.code);
+		logger.debug(`Executing Python Code for "${options.parameters.reason}"`);
+		logger.debug(`Code => `);
+		logger.debug(code);
+
 		this.pendingRequests = this.pendingRequests.finally().then(() => this._kernel.execute(code));
 		const result = await this.pendingRequests as Awaited<ReturnType<typeof Kernel.prototype.execute>>;
 
-		logger.debug(`Executing Python Code`, code, result);
+		logger.debug(`Result => `);
+		Object.keys(result || {}).forEach(key => {
+			logger.debug(`${key} :`);
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			logger.debug((result as any)[key]);
+		});
+
 		const resultData: { [key: string]: unknown } = {};
 		if (result && result['text/plain']) {
 			resultData['text/plain'] = result['text/plain'];

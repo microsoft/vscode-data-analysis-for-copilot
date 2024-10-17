@@ -153,7 +153,7 @@ export class DataAgent implements vscode.Disposable {
 				options.tools = allTools;
 			}
 
-			logger.debug('SENDING REQUEST', messages);
+			logger.debug('Sending request', JSON.stringify(messages, undefined, 4));
 			const toolCalls: vscode.LanguageModelToolCallPart[] = [];
 			const pyodideToolCalls = toolCallRounds.map(r => r.toolCalls).flat().filter(tc => tc.name === 'ada-data_runPython');
 			const isFinalResponse = messages.length && isFinalUserMessageInResponseToToolCall(messages[messages.length - 1].content + messages[messages.length - 1].content2);
