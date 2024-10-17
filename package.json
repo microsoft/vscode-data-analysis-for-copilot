@@ -30,7 +30,57 @@
     ],
     "license": "MIT",
     "main": "./out/extension.js",
+    "capabilities": {
+        "virtualWorkspaces": true,
+        "untrustedWorkspaces": {
+            "supported": "limited",
+            "description": "%capabilities.untrustedWorkspace.description%"
+        }
+    },
     "contributes": {
+        "commands":[
+            {
+                "category": "Chat",
+                "command": "dachat.analyzeCsv",
+                "enablement": "isWorkspaceTrusted && resourceExtname == .csv && resourceScheme =~ /^^file$/ && workspaceFolderCount > 0",
+                "icon": "$(copilot)",
+                "title": "%commands.dachat.analyzeCsv.title%",
+                "shortTitle": "%commands.dachat.analyzeCsv.shortTitle%"
+            }
+        ],
+        "menus": {
+            "commandPalette": [
+                {
+                    "command": "dachat.analyzeCsv",
+                    "when": "false"
+                }
+            ],
+            "editor/title": [
+                {
+                    "command": "dachat.analyzeCsv",
+                    "when": "isWorkspaceTrusted && resourceExtname == .csv && resourceScheme =~ /^^file$/ && workspaceFolderCount > 0",
+                    "group": "navigation",
+                    "title": "%commands.dachat.analyzeCsv.title%",
+                    "alt": "Hello"
+                }
+            ],
+            "editor/context": [
+                {
+                    "command": "dachat.analyzeCsv",
+                    "when": "isWorkspaceTrusted && resourceExtname == .csv && resourceScheme =~ /^^file$/ && workspaceFolderCount > 0",
+                    "group": "data",
+                    "title": "%commands.dachat.analyzeCsv.title%"
+                }
+            ],
+            "explorer/context": [
+                {
+                    "command": "dachat.analyzeCsv",
+                    "when": "isWorkspaceTrusted && resourceExtname == .csv && resourceScheme =~ /^^file$/ && workspaceFolderCount > 0",
+                    "group": "data",
+                    "title": "%commands.dachat.analyzeCsv.title%"
+                }
+            ]
+        },
         "chatParticipants": [
             {
                 "id": "dachat.data",
