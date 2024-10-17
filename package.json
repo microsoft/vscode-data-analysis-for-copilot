@@ -1,7 +1,7 @@
 {
-    "name": "data-analysis-chat-participant",
+    "name": "vscode-copilot-data-analysis",
     "publisher": "microsoft",
-    "displayName": "Data Analysis Chat Participant",
+    "displayName": "Data Analysis for Copilot",
     "description": "This tool extends the LLM's capabilities by allowing it to run Python code in a sandboxed Python environment (Pyodide) for a wide range of computational tasks and data manipulations that it cannot perform directly.",
     "author": "Microsoft Corporation",
     "homepage": "https://github.com/microsoft/Advanced-Data-Analysis-for-Copilot",
@@ -60,8 +60,7 @@
                     "command": "dachat.analyzeCsv",
                     "when": "isWorkspaceTrusted && resourceExtname == .csv && resourceScheme =~ /^^file$/ && workspaceFolderCount > 0",
                     "group": "navigation",
-                    "title": "%commands.dachat.analyzeCsv.title%",
-                    "alt": "Hello"
+                    "title": "%commands.dachat.analyzeCsv.title%"
                 }
             ],
             "editor/context": [
@@ -87,6 +86,7 @@
                 "fullName": "Data Analytics",
                 "name": "data",
                 "description": "I can help you with data analytics",
+                "sampleRequest": "Help me analyze the csv file",
                 "isSticky": true
             }
         ],
