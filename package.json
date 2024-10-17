@@ -1,6 +1,6 @@
 {
     "name": "vscode-copilot-data-analysis",
-    "publisher": "ms-vscode",
+    "publisher": "microsoft",
     "displayName": "Data Analysis for Copilot",
     "description": "This tool extends the LLM's capabilities by allowing it to run Python code in a sandboxed Python environment (Pyodide) for a wide range of computational tasks and data manipulations that it cannot perform directly.",
     "author": "Microsoft Corporation",
@@ -87,7 +87,21 @@
                 "name": "data",
                 "description": "I can help you with data analytics",
                 "sampleRequest": "Help me analyze the csv file",
-                "isSticky": true
+                "isSticky": true,
+                "commands": [
+                    {
+                        "description": "Export the result of the analysis along with the Python code into a Jupyter Notebook",
+                        "isSticky": false,
+                        "name": "exportNotebook",
+                        "sampleRequest": "/exportNotebook"
+                    },
+                    {
+                        "description": "Export the result of the analysis along with the Python code into a Python file",
+                        "isSticky": false,
+                        "name": "exportPython",
+                        "sampleRequest": "/exportPython"
+                    }
+                ]
             }
         ],
         "languageModelTools": [
