@@ -1,11 +1,13 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-import { ChatResponseAnchorPart, ChatResponseCommandButtonPart, type ChatResponseFileTree, ChatResponseFileTreePart, ChatResponseMarkdownPart, type ChatResponsePart, ChatResponseProgressPart, ChatResponseReferencePart, type ChatResponseStream, type Command, type Location, type MarkdownString, type ThemeIcon, type Uri } from "vscode";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { ChatCommand, ChatResponseAnchorPart, ChatResponseCommandButtonPart, type ChatResponseFileTree, ChatResponseFileTreePart, ChatResponseMarkdownPart, type ChatResponsePart, ChatResponseProgressPart, ChatResponseReferencePart, ChatResponseReferencePartStatusKind, type ChatResponseStream, ChatVulnerability, type Command, type Location, type MarkdownString, TextEdit, type ThemeIcon, type Uri } from "vscode";
 
 
 export class MockChatResponseStream implements ChatResponseStream {
 	public readonly parts: ChatResponsePart[] = [];
+	public readonly edits = new Map<string, (TextEdit | TextEdit[])[]>();
 	clear() {
 		this.parts.length = 0;
 	}
@@ -40,5 +42,29 @@ export class MockChatResponseStream implements ChatResponseStream {
 		} else {
 			this.parts.push(part);
 		}
+	}
+	textEdit(_target: Uri, _edits: TextEdit | TextEdit[]): void {
+		//
+	}
+	markdownWithVulnerabilities(_value: string | MarkdownString, _vulnerabilities: ChatVulnerability[]): void {
+		//
+	}
+	codeblockUri(_uri: Uri): void {
+		//
+	}
+	detectedParticipant(_participant: string, _command?: ChatCommand): void {
+		//
+	}
+	confirmation(_title: string, _message: string, _data: any, _buttons?: string[]): void {
+
+	}
+	warning(_message: string | MarkdownString): void {
+		//
+	}
+	reference2(_value: Uri | Location | string | { variableName: string; value?: Uri | Location; }, _iconPath?: Uri | ThemeIcon | { light: Uri; dark: Uri; }, _options?: { status?: { description: string; kind: ChatResponseReferencePartStatusKind; }; }): void {
+		//
+	}
+	codeCitation(_value: Uri, _license: string, _snippet: string): void {
+		//
 	}
 }
