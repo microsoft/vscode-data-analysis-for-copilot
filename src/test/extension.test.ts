@@ -4,6 +4,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { assert } from 'chai';
+// import sinon from 'sinon';
 import { CancellationTokenSource, ChatResponseMarkdownPart, commands, extensions } from 'vscode';
 import { ToolCallRound } from '../base';
 import { DataAgent } from '../dataAgent';
@@ -13,6 +14,7 @@ import { MockChatResponseStream } from './mockResponseStream';
 suite('Extension Test Suite', () => {
 	let dataAgent: DataAgent;
 	let tokenSource: CancellationTokenSource;
+	// let stubRenderMessages: sinon.SinonStub;
 	suiteSetup(async function () {
 		await Promise.all([
 			extensions.getExtension('GitHub.copilot-chat')!.activate(),
@@ -22,7 +24,10 @@ suite('Extension Test Suite', () => {
 		tokenSource = new CancellationTokenSource();
 		dataAgent = extensions.getExtension('microsoft.vscode-copilot-data-analysis')!.exports.dataAgent;
 	});
-	suiteTeardown(() => tokenSource.dispose());
+	suiteTeardown(() => {
+		tokenSource.dispose();
+		// stubRenderMessages.restore();
+	});
 	async function sendChatMessage(prompt: string) {
 		const stream = new MockChatResponseStream();
 		const result = await dataAgent.handle({
@@ -228,4 +233,13 @@ suite('Extension Test Suite', () => {
 		assert.include(markdown, '.png)') // File will be png
 		assert.include(markdown, `result-${RunPythonTool.Id}`.toLowerCase()) // File name has a specific format.
 	});
+
+	// test('Make sure to include context', async () => {
+	// 	stubRenderMessages = sinon.stub(dataAgent as any, '_renderMessages');
+	// 	await sendChatMessage('analyze housing.csv with #file:HelloThere ');
+	// 	assert.isTrue(stubRenderMessages.calledOnce, '_renderMessages should be called once');
+	// 	const callArgs = stubRenderMessages.getCall(0).args;
+	// 	assert.deepEqual(callArgs[1].references, {}, 'References should match the given references'); // TODO: Should check if reference for #file:HelloThere is inside
+	// });
+
 }).timeout(600_000);
