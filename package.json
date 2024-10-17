@@ -1,6 +1,6 @@
 {
     "name": "vscode-copilot-data-analysis",
-    "publisher": "microsoft",
+    "publisher": "ms-vscode",
     "displayName": "Data Analysis for Copilot",
     "description": "This tool extends the LLM's capabilities by allowing it to run Python code in a sandboxed Python environment (Pyodide) for a wide range of computational tasks and data manipulations that it cannot perform directly.",
     "author": "Microsoft Corporation",
