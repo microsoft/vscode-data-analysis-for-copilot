@@ -395,18 +395,7 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 
 		const toolResult = resultsFromCurrentRound[toolCall.toolCallId] || await this._getToolCallResult(tool, toolCall, toolInvocationToken, sizing);
 
-		if (toolResult['text/plain']) {
-			const text = toolResult['text/plain'];
-			const promptSize = await sizing.countTokens(text);
-
-			return { promptPiece: <ToolMessage toolCallId={toolCall.toolCallId}>
-				<meta value={new ToolResultMetadata(toolCall.toolCallId, toolResult)}></meta>
-				{text}
-			</ToolMessage>, hasError: false, size: promptSize };
-		} else if (toolResult['image/png']) {
-			const piece = await this._processImageOutput(toolCall.name, toolCall.toolCallId, toolResult, sizing);
-			return { promptPiece: piece.piece, hasError: false, size: piece.size };
-		} else if (toolResult['application/vnd.code.notebook.error']) {
+		if (toolResult['application/vnd.code.notebook.error']) {
 			const error = toolResult['application/vnd.code.notebook.error'] as Error;
 			const errorContent = [error.name || '', error.message || '', error.stack || ''].filter((part) => part).join('\n');
 			const errorMessage = `The tool returned an error, analyze this error and attempt to resolve this. Error: ${errorContent}`;
@@ -416,6 +405,42 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 				<meta value={new ToolResultMetadata(toolCall.toolCallId, toolResult)}></meta>
 				<TextChunk>{errorMessage}</TextChunk>
 			</ToolMessage>, hasError: true, size: size };
+		}
+
+		if (toolResult['image/png']) {
+			const imageOutput = await this._processImageOutput(toolCall.name, toolCall.toolCallId, toolResult, sizing);
+
+			if (toolResult['text/plain']) {
+				const text = toolResult['text/plain'];
+				const textPromptSize = await sizing.countTokens(text);
+
+				return { promptPiece: <Chunk>
+						<ToolMessage toolCallId={toolCall.toolCallId}>
+							<meta value={new ToolResultMetadata(toolCall.toolCallId, toolResult)}></meta>
+							{text}
+							{imageOutput.result}
+						</ToolMessage>
+						<UserMessage>{imageOutput.additionalUserMessage}</UserMessage>
+					</Chunk>, hasError: false, size: imageOutput.size + textPromptSize };
+			} else {
+				return { promptPiece: <Chunk>
+					<ToolMessage toolCallId={toolCall.toolCallId}>
+						<meta value={new ToolResultMetadata(toolCall.toolCallId, toolResult)}></meta>
+						{imageOutput.result}
+					</ToolMessage>
+					<UserMessage>{imageOutput.additionalUserMessage}</UserMessage>
+				</Chunk>, hasError: false, size: imageOutput.size };
+			}
+		}
+
+		if (toolResult['text/plain']) {
+			const text = toolResult['text/plain'];
+			const promptSize = await sizing.countTokens(text);
+
+			return { promptPiece: <ToolMessage toolCallId={toolCall.toolCallId}>
+				<meta value={new ToolResultMetadata(toolCall.toolCallId, toolResult)}></meta>
+				{text}
+			</ToolMessage>, hasError: false, size: promptSize };
 		}
 
 		return { promptPiece: <></>, hasError: false, size: 0 };
@@ -455,17 +480,10 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 
 				const size = (await sizing.countTokens(markdownTextForImage)) + (await sizing.countTokens(userMessageWithWithImageFromToolCall));
 				return {
-					piece: <>
-						<Chunk>
-							<ToolMessage toolCallId={toolCallId}>
-								<meta value={new ToolResultMetadata(toolCallId, toolResult)}></meta>
-								{markdownTextForImage}
-							</ToolMessage>
-							<UserMessage>{userMessageWithWithImageFromToolCall}</UserMessage>
-						</Chunk>
-					</>,
+					result: markdownTextForImage,
+					additionalUserMessage: userMessageWithWithImageFromToolCall,
 					size: size
-				}
+				};
 			}
 		}
 
@@ -473,17 +491,10 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 		const size = (await sizing.countTokens(markdownTextForImage)) + (await sizing.countTokens(userMessageWithWithImageFromToolCall));
 
 		return {
-			piece: <>
-				<Chunk>
-					<ToolMessage toolCallId={toolCallId}>
-						<meta value={new ToolResultMetadata(toolCallId, toolResult)}></meta>
-						{markdownTextForImage}
-					</ToolMessage>
-					<UserMessage>{userMessageWithWithImageFromToolCall}</UserMessage>
-				</Chunk>
-			</>,
+			result: markdownTextForImage,
+			additionalUserMessage: userMessageWithWithImageFromToolCall,
 			size: size
-		};
+		}
 	}
 
 	private async _saveImage(storageUri: vscode.Uri, tool: string, imageBuffer: Buffer): Promise<string | undefined> {
