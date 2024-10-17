@@ -16,11 +16,11 @@ suite('Extension Test Suite', () => {
 	suiteSetup(async function () {
 		await Promise.all([
 			extensions.getExtension('GitHub.copilot-chat')!.activate(),
-			extensions.getExtension('microsoft.vscode-copilot-data-analysis')!.activate()
+			extensions.getExtension('ms-vscode.vscode-copilot-data-analysis')!.activate()
 		]);
 		await commands.executeCommand('workbench.action.chat.open');
 		tokenSource = new CancellationTokenSource();
-		dataAgent = extensions.getExtension('microsoft.vscode-copilot-data-analysis')!.exports.dataAgent;
+		dataAgent = extensions.getExtension('ms-vscode.vscode-copilot-data-analysis')!.exports.dataAgent;
 	});
 	suiteTeardown(() => tokenSource.dispose());
 	async function sendChatMessage(prompt: string) {
