@@ -1,4 +1,4 @@
-# Project
+# Data Analysis for Copilot
 
 This tool extends the LLM's capabilities by allowing it to run Python code for a wide range of computational tasks and data manipulations that it cannot perform directly.
 
