@@ -32,3 +32,10 @@ extends:
 
       - script: npm run compile
         displayName: Compile
+
+
+    tsa:
+      config:
+        areaPath: 'Visual Studio Code Jupyter Extensions'
+        serviceTreeID: '14f24efd-b502-422a-9f40-09ea7ce9cf14'
+      enabled: true
