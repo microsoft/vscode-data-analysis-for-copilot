@@ -15,10 +15,8 @@ vsc-extension-quickstart.md
 **/*.ts
 **/*.d.ts
 build/**
-pyodide/node/*.js
 pyodide/node/*.js.map
 pyodide/node/*.d.ts
-pyodide/common/*.js
 pyodide/common/*.js.map
 pyodide/common/*.d.ts
 pyodide/*.map
