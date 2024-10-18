@@ -4,7 +4,7 @@ This tool extends the LLM's capabilities by allowing it to run Python code for a
 
 The Python code is executed locally in [Pyodide](https://pyodide.org/en/stable/).
 
-![demo](https://raw.githubusercontent.com/microsoft/vscode-jupyter/e3744b71f8ecad7ad0f78caa3c5fb8dda929aa50/images/demo.gif)
+![demo](https://raw.githubusercontent.com/microsoft/vscode-jupyter/refs/heads/dataanalysis/images/demo.gif)
 
 ## Contributing
 
