@@ -3,38 +3,58 @@
 {
 	"version": "2.0.0",
 	"tasks": [
+        {
+            "label": "watch",
+            "dependsOn": [
+                "npm: watch-extension"
+            ],
+            "presentation": {
+                "reveal": "never",
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "runOptions": {
+                "runOn": "folderOpen"
+            }
+        },
 		{
-			"type": "npm",
-			"script": "watch",
-			"problemMatcher": "$tsc-watch",
-			"isBackground": true,
-			"presentation": {
-				"reveal": "never",
-				"group": "watchers"
-			},
-			"group": {
-				"kind": "build",
-				"isDefault": true
-			}
-		},
+            "type": "npm",
+            "script": "watch-extension",
+            "group": "build",
+            "problemMatcher": "$esbuild-watch",
+            "isBackground": true,
+            "label": "npm: watch-extension",
+            "presentation": {
+                "group": "watch",
+                "reveal": "never"
+            }
+        },
 		{
-			"type": "npm",
-			"script": "watch-tests",
-			"problemMatcher": "$tsc-watch",
-			"isBackground": true,
-			"presentation": {
-				"reveal": "never",
-				"group": "watchers"
-			},
-			"group": "build"
-		},
+            "label": "watch-tests",
+            "dependsOn": [
+                "npm: watch-tests"
+            ],
+            "presentation": {
+                "reveal": "never",
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
 		{
-			"label": "tasks: watch-tests",
-			"dependsOn": [
-				"npm: watch",
-				"npm: watch-tests"
-			],
-			"problemMatcher": []
-		}
+            "type": "npm",
+            "script": "watch-tests",
+            "group": "build",
+            "problemMatcher": "$tsc-watch",
+            "isBackground": true,
+            "label": "npm: watch-tests",
+            "presentation": {
+                "group": "watch",
+                "reveal": "never"
+            }
+        }
 	]
 }

@@ -22,7 +22,7 @@ extends:
   template: azure-pipelines/extension/stable.yml@templates
   parameters:
     publishExtension: ${{ parameters.publishExtension }}
-    # l10nSourcePaths: ./src
+    l10nSourcePaths: ./src
     buildSteps:
       - script: npm ci
         displayName: npm ci
@@ -30,8 +30,12 @@ extends:
       - script: npm run lint
         displayName: Linting
 
-      - script: npm run format-check
-        displayName: Formatting
-
       - script: npm run compile
         displayName: Compile
+
+
+    tsa:
+      config:
+        areaPath: 'Visual Studio Code Jupyter Extensions'
+        serviceTreeID: '14f24efd-b502-422a-9f40-09ea7ce9cf14'
+      enabled: true
