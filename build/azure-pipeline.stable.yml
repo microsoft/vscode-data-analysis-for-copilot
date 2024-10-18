@@ -22,7 +22,7 @@ extends:
   template: azure-pipelines/extension/stable.yml@templates
   parameters:
     publishExtension: ${{ parameters.publishExtension }}
-    # l10nSourcePaths: ./src
+    l10nSourcePaths: ./src
     buildSteps:
       - script: npm ci
         displayName: npm ci
