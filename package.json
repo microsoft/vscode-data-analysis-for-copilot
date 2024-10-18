@@ -12,12 +12,17 @@
     "bugs": {
         "url": "https://github.com/microsoft/Advanced-Data-Analysis-for-Copilot/issues"
     },
+    "icon": "images/icon.png",
     "version": "0.1.0",
     "engines": {
         "vscode": "^1.95.0"
     },
     "categories": [
         "AI",
+        "Data Science",
+        "Machine Learning",
+        "Visualization",
+        "Programming Languages",
         "Chat"
     ],
     "activationEvents": [
@@ -27,6 +32,13 @@
         "chatVariableResolver",
         "lmTools",
         "chatProvider"
+    ],
+    "keywords": [
+        "ai",
+        "analysis",
+        "chat",
+        "co-pilot",
+        "data"
     ],
     "license": "MIT",
     "main": "./out/extension.js",
