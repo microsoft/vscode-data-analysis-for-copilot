@@ -7,6 +7,8 @@ import * as vscode from 'vscode';
 import type { Kernel } from '../pyodide/node/index';
 import { logger } from './logger';
 
+export const ErrorMime = 'application/vnd.code.notebook.error';
+
 interface IFindFilesParameters {
 	pattern: string;
 }

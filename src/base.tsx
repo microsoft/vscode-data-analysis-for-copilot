@@ -18,8 +18,15 @@ import { Chunk, TextChunk, ToolCall, ToolMessage } from '@vscode/prompt-tsx/dist
 import * as path from 'path';
 import * as vscode from "vscode";
 import { logger } from './logger';
+import { RunPythonTool } from './tools';
+
+const ImagePrefix = `8a59d504`;
 
 const userMessageWithWithImageFromToolCall = `Return this image link in your response. Do not modify the markdown image link at all. The path is already absolute local file path, do not put "https" or "blob" in the link`;
+
+export function isImageGeneratedByUs(imageName: string) {
+	return imageName.startsWith(`result-${RunPythonTool.Id}-${ImagePrefix}-`);
+}
 
 export function isUserMessageWithImageFromToolCall(message: string) {
 	return message.includes(userMessageWithWithImageFromToolCall);
@@ -57,85 +64,85 @@ export interface PromptProps extends BasePromptElementProps {
 
 
 interface PromptReferencesProps extends BasePromptElementProps {
-    references: ReadonlyArray<vscode.ChatPromptReference>;
-    excludeReferences?: boolean;
+	references: ReadonlyArray<vscode.ChatPromptReference>;
+	excludeReferences?: boolean;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 class PromptReferences extends PromptElement<PromptReferencesProps, void> {
-    render(_state: void, _sizing: PromptSizing): PromptPiece {
-        return (
-            <UserMessage>
-                {this.props.references.map((ref, _index) => (
-                    <PromptReferenceElement ref={ref} excludeReferences={this.props.excludeReferences} />
-                ))}
-            </UserMessage>
-        );
-    }
+	render(_state: void, _sizing: PromptSizing): PromptPiece {
+		return (
+			<UserMessage>
+				{this.props.references.map((ref, _index) => (
+					<PromptReferenceElement ref={ref} excludeReferences={this.props.excludeReferences} />
+				))}
+			</UserMessage>
+		);
+	}
 }
 
 interface PromptReferenceProps extends BasePromptElementProps {
-    ref: vscode.ChatPromptReference;
-    excludeReferences?: boolean;
+	ref: vscode.ChatPromptReference;
+	excludeReferences?: boolean;
 }
 
 export type TagProps = PromptElementProps<{
-    name: string;
+	name: string;
 }>;
 
 export class Tag extends PromptElement<TagProps> {
-    private static readonly _regex = /^[a-zA-Z_][\w.-]*$/;
+	private static readonly _regex = /^[a-zA-Z_][\w.-]*$/;
 
-    render() {
-        const { name } = this.props;
+	render() {
+		const { name } = this.props;
 
-        if (!Tag._regex.test(name)) {
-            throw new Error(`Invalid tag name: ${this.props.name}`);
-        }
+		if (!Tag._regex.test(name)) {
+			throw new Error(`Invalid tag name: ${this.props.name}`);
+		}
 
-        return (
-            <>
-                {'<' + name + '>'}<br />
-                <>
-                    {this.props.children}<br />
-                </>
-                {'</' + name + '>'}<br />
-            </>
-        );
-    }
+		return (
+			<>
+				{'<' + name + '>'}<br />
+				<>
+					{this.props.children}<br />
+				</>
+				{'</' + name + '>'}<br />
+			</>
+		);
+	}
 }
 
 class PromptReferenceElement extends PromptElement<PromptReferenceProps> {
-    async render(_state: void, _sizing: PromptSizing): Promise<PromptPiece | undefined> {
-        const value = this.props.ref.value;
-        // TODO make context a list of TextChunks so that it can be trimmed
-        if (value instanceof vscode.Uri) {
-            const fileContents = (await vscode.workspace.fs.readFile(value)).toString();
-            return (
-                <Tag name="context">
-                    {!this.props.excludeReferences && <references value={[new PromptReference(value)]} />}
-                    {value.fsPath}:<br />
-                    ``` <br />
-                    {fileContents}<br />
-                    ```<br />
-                </Tag>
-            );
-        } else if (value instanceof vscode.Location) {
-            const rangeText = (await vscode.workspace.openTextDocument(value.uri)).getText(value.range);
-            return (
-                <Tag name="context">
-                    {!this.props.excludeReferences && <references value={[new PromptReference(value)]} /> }
-                    {value.uri.fsPath}:{value.range.start.line + 1}-$<br />
-                    {value.range.end.line + 1}: <br />
-                    ```<br />
-                    {rangeText}<br />
-                    ```
-                </Tag>
-            );
-        } else if (typeof value === 'string') {
-            return <Tag name="context">{value}</Tag>;
-        }
-    }
+	async render(_state: void, _sizing: PromptSizing): Promise<PromptPiece | undefined> {
+		const value = this.props.ref.value;
+		// TODO make context a list of TextChunks so that it can be trimmed
+		if (value instanceof vscode.Uri) {
+			const fileContents = (await vscode.workspace.fs.readFile(value)).toString();
+			return (
+				<Tag name="context">
+					{!this.props.excludeReferences && <references value={[new PromptReference(value)]} />}
+					{value.fsPath}:<br />
+					``` <br />
+					{fileContents}<br />
+					```<br />
+				</Tag>
+			);
+		} else if (value instanceof vscode.Location) {
+			const rangeText = (await vscode.workspace.openTextDocument(value.uri)).getText(value.range);
+			return (
+				<Tag name="context">
+					{!this.props.excludeReferences && <references value={[new PromptReference(value)]} />}
+					{value.uri.fsPath}:{value.range.start.line + 1}-$<br />
+					{value.range.end.line + 1}: <br />
+					```<br />
+					{rangeText}<br />
+					```
+				</Tag>
+			);
+		} else if (typeof value === 'string') {
+			return <Tag name="context">{value}</Tag>;
+		}
+	}
 }
 
 export class DataAgentPrompt extends PromptElement<PromptProps, void> {
@@ -148,7 +155,7 @@ export class DataAgentPrompt extends PromptElement<PromptProps, void> {
 				<Instructions history={this.props.history} priority={1000} />
 				<History history={this.props.history} priority={500} flexGrow={1} toolInvocationToken={this.props.toolInvocationToken} extensionContext={this.props.extensionContext} />
 
-                {/* <PromptReferences
+				{/* <PromptReferences
                     references={this.props.references}
 					flexGrow={2}
                     priority={450}
@@ -369,7 +376,7 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 		const toolCallPieces = await Promise.all(round.toolCalls.map(tc => this._renderOneToolCall(tc, round.response, sizing, toolInvocationToken)));
 		const suffixMessage = generateUserMessageForToolResponse(toolCallIds);
 		const remainingTextSize = await sizing.countTokens(suffixMessage);
-		const totalSize= toolCallPieces.map(tcp => tcp.size).reduce((a, b) => a + b, 0) + remainingTextSize;
+		const totalSize = toolCallPieces.map(tcp => tcp.size).reduce((a, b) => a + b, 0) + remainingTextSize;
 		const hasError = toolCallPieces.some(tcp => tcp.hasError);
 		const promptPieces = toolCallPieces.map(tcp => tcp.promptPiece);
 
@@ -401,10 +408,12 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 			const errorMessage = `The tool returned an error, analyze this error and attempt to resolve this. Error: ${errorContent}`;
 
 			const size = await sizing.countTokens(errorMessage);
-			return { promptPiece: <ToolMessage toolCallId={toolCall.toolCallId}>
-				<meta value={new ToolResultMetadata(toolCall.toolCallId, toolResult)}></meta>
-				<TextChunk>{errorMessage}</TextChunk>
-			</ToolMessage>, hasError: true, size: size };
+			return {
+				promptPiece: <ToolMessage toolCallId={toolCall.toolCallId}>
+					<meta value={new ToolResultMetadata(toolCall.toolCallId, toolResult)}></meta>
+					<TextChunk>{errorMessage}</TextChunk>
+				</ToolMessage>, hasError: true, size: size
+			};
 		}
 
 		if (toolResult['image/png']) {
@@ -414,22 +423,26 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 				const text = toolResult['text/plain'];
 				const textPromptSize = await sizing.countTokens(text);
 
-				return { promptPiece: <Chunk>
+				return {
+					promptPiece: <Chunk>
 						<ToolMessage toolCallId={toolCall.toolCallId}>
 							<meta value={new ToolResultMetadata(toolCall.toolCallId, toolResult)}></meta>
 							{text}
 							{imageOutput.result}
 						</ToolMessage>
 						<UserMessage>{imageOutput.additionalUserMessage}</UserMessage>
-					</Chunk>, hasError: false, size: imageOutput.size + textPromptSize };
+					</Chunk>, hasError: false, size: imageOutput.size + textPromptSize
+				};
 			} else {
-				return { promptPiece: <Chunk>
-					<ToolMessage toolCallId={toolCall.toolCallId}>
-						<meta value={new ToolResultMetadata(toolCall.toolCallId, toolResult)}></meta>
-						{imageOutput.result}
-					</ToolMessage>
-					<UserMessage>{imageOutput.additionalUserMessage}</UserMessage>
-				</Chunk>, hasError: false, size: imageOutput.size };
+				return {
+					promptPiece: <Chunk>
+						<ToolMessage toolCallId={toolCall.toolCallId}>
+							<meta value={new ToolResultMetadata(toolCall.toolCallId, toolResult)}></meta>
+							{imageOutput.result}
+						</ToolMessage>
+						<UserMessage>{imageOutput.additionalUserMessage}</UserMessage>
+					</Chunk>, hasError: false, size: imageOutput.size
+				};
 			}
 		}
 
@@ -437,10 +450,12 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 			const text = toolResult['text/plain'];
 			const promptSize = await sizing.countTokens(text);
 
-			return { promptPiece: <ToolMessage toolCallId={toolCall.toolCallId}>
-				<meta value={new ToolResultMetadata(toolCall.toolCallId, toolResult)}></meta>
-				{text}
-			</ToolMessage>, hasError: false, size: promptSize };
+			return {
+				promptPiece: <ToolMessage toolCallId={toolCall.toolCallId}>
+					<meta value={new ToolResultMetadata(toolCall.toolCallId, toolResult)}></meta>
+					{text}
+				</ToolMessage>, hasError: false, size: promptSize
+			};
 		}
 
 		return { promptPiece: <></>, hasError: false, size: 0 };
@@ -505,7 +520,7 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 		}
 
 		const storagePath = storageUri.fsPath;
-		const imagePath = path.join(storagePath, `result-${tool}-${Date.now()}.png`);
+		const imagePath = path.join(storagePath, `result-${tool}-${ImagePrefix}-${Date.now()}.png`);
 		const imageUri = vscode.Uri.file(imagePath);
 		try {
 			await vscode.workspace.fs.writeFile(imageUri, imageBuffer);

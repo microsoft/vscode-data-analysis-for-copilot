@@ -50,7 +50,7 @@
         }
     },
     "contributes": {
-        "commands":[
+        "commands": [
             {
                 "category": "Chat",
                 "command": "dachat.analyzeCsv",
@@ -102,16 +102,10 @@
                 "isSticky": true,
                 "commands": [
                     {
-                        "description": "Export the result of the analysis along with the Python code into a Jupyter Notebook",
+                        "description": "Export the result of the analysis along with the Python code into multiple formats",
                         "isSticky": false,
-                        "name": "exportNotebook",
-                        "sampleRequest": "/exportNotebook"
-                    },
-                    {
-                        "description": "Export the result of the analysis along with the Python code into a Python file",
-                        "isSticky": false,
-                        "name": "exportPython",
-                        "sampleRequest": "/exportPython"
+                        "name": "export",
+                        "when": "false"
                     }
                 ]
             }
@@ -213,6 +207,7 @@
         "unzipper": "^0.12.3"
     },
     "dependencies": {
-        "@vscode/prompt-tsx": "^0.3.0-alpha.5"
+        "@vscode/prompt-tsx": "^0.3.0-alpha.5",
+        "filenamify": "^6.0.0"
     }
 }
