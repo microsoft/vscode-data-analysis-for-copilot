@@ -14,7 +14,7 @@ import {
 	PromptSizing,
 	UserMessage,
 } from '@vscode/prompt-tsx';
-import { Chunk, TextChunk, ToolCall, ToolMessage } from '@vscode/prompt-tsx/dist/base/promptElements';
+import { Chunk, TextChunk, ToolCall, ToolMessage, ToolResult } from '@vscode/prompt-tsx/dist/base/promptElements';
 import * as path from 'path';
 import * as vscode from "vscode";
 import { logger } from './logger';
@@ -393,95 +393,76 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 		};
 	}
 
-	private async _renderOneToolCall(toolCall: vscode.LanguageModelToolCallPart, resultsFromCurrentRound: Record<string, vscode.LanguageModelToolResult>, sizing: PromptSizing, toolInvocationToken: vscode.ChatParticipantToolToken | undefined): Promise<{ promptPiece: PromptPiece, hasError: boolean, size: number }> {
+	private async _renderOneToolCall(toolCall: vscode.LanguageModelToolCallPart, resultsFromCurrentRound: Record<string, vscode.LanguageModelToolResult | Error>, sizing: PromptSizing, toolInvocationToken: vscode.ChatParticipantToolToken | undefined): Promise<{ promptPiece: PromptPiece, hasError: boolean, size: number }> {
 		const tool = vscode.lm.tools.find((tool) => tool.name === toolCall.name);
 		if (!tool) {
 			logger.error(`Tool not found: ${toolCall.name}`);
 			return { promptPiece: <ToolMessage toolCallId={getToolCallId(toolCall)}>Tool not found</ToolMessage>, hasError: false, size: await sizing.countTokens('Tool not found') };
 		}
 
-		const toolResult = resultsFromCurrentRound[getToolCallId(toolCall)] || await this._getToolCallResult(tool, toolCall, toolInvocationToken, sizing);
+		const toolResult = await this._getToolCallResult(tool, toolCall, resultsFromCurrentRound, toolInvocationToken, sizing);
 
-		const error = getToolResultValue<Error>(toolResult, 'application/vnd.code.notebook.error');
-		if (error) {
-			const errorContent = [error.name || '', error.message || '', error.stack || ''].filter((part) => part).join('\n');
+		if (isError(toolResult)) {
+			const errorContent = [toolResult.name || '', toolResult.message || '', toolResult.stack || ''].filter((part) => part).join('\n');
 			const errorMessage = `The tool returned an error, analyze this error and attempt to resolve this. Error: ${errorContent}`;
-
+			const result = new vscode.LanguageModelToolResult([new vscode.LanguageModelTextPart(errorMessage)]);
 			const size = await sizing.countTokens(errorMessage);
 			return {
 				promptPiece: <ToolMessage toolCallId={getToolCallId(toolCall)}>
-					<meta value={new ToolResultMetadata(getToolCallId(toolCall), toolResult)}></meta>
+					<meta value={new ToolResultMetadata(getToolCallId(toolCall), result)}></meta>
 					<TextChunk>{errorMessage}</TextChunk>
 				</ToolMessage>, hasError: true, size: size
 			};
 		}
 
-		const image = getToolResultValue<string>(toolResult, 'image/png');
-		const plainText = getToolResultValue<string>(toolResult, 'text/plain');
-		if (image) {
-			const imageOutput = await this._processImageOutput(toolCall.name, image, sizing);
+		const promptSize = await this._countToolCallResultsize(toolResult, sizing);
 
-			if (plainText) {
-				const text = plainText;
-				const textPromptSize = await sizing.countTokens(text);
+		return {
+			promptPiece: <ToolMessage toolCallId={getToolCallId(toolCall)}>
+				<meta value={new ToolResultMetadata(getToolCallId(toolCall), toolResult)}></meta>
+				<ToolResult data={toolResult}/>
+			</ToolMessage>, hasError: false, size: promptSize
+		};
+	}
 
-				return {
-					promptPiece: <Chunk>
-						<ToolMessage toolCallId={getToolCallId(toolCall)}>
-							<meta value={new ToolResultMetadata(getToolCallId(toolCall), toolResult)}></meta>
-							{text}
-							{imageOutput.result}
-						</ToolMessage>
-						<UserMessage>{imageOutput.additionalUserMessage}</UserMessage>
-					</Chunk>, hasError: false, size: imageOutput.size + textPromptSize
-				};
-			} else {
-				return {
-					promptPiece: <Chunk>
-						<ToolMessage toolCallId={getToolCallId(toolCall)}>
-							<meta value={new ToolResultMetadata(getToolCallId(toolCall), toolResult)}></meta>
-							{imageOutput.result}
-						</ToolMessage>
-						<UserMessage>{imageOutput.additionalUserMessage}</UserMessage>
-					</Chunk>, hasError: false, size: imageOutput.size
-				};
+	private async _getToolCallResult(tool: vscode.LanguageModelToolInformation, toolCall: vscode.LanguageModelToolCallPart, resultsFromCurrentRound: Record<string, vscode.LanguageModelToolResult | Error>, toolInvocationToken: vscode.ChatParticipantToolToken | undefined, sizing: PromptSizing) {
+		if (resultsFromCurrentRound[getToolCallId(toolCall)]) {
+			return resultsFromCurrentRound[getToolCallId(toolCall)];
+		}
+
+		const token = new vscode.CancellationTokenSource().token;
+		try {
+			const toolResult = await vscode.lm.invokeTool(
+				tool.name,
+				{
+					parameters: toolCall.parameters,
+					toolInvocationToken: toolInvocationToken,
+					tokenizationOptions: {
+						tokenBudget: sizing.tokenBudget,
+						countTokens: async (text, token) => {
+							return sizing.countTokens(text, token);
+						}
+					}
+				},
+				token
+			);
+
+			return toolResult as vscode.LanguageModelToolResult;
+		} catch (e: unknown) {
+			const error = e as Error;
+			return error;
+		}
+	}
+
+	private async _countToolCallResultsize(toolResult: vscode.LanguageModelToolResult, sizing: PromptSizing) {
+		let size = 0;
+		for (const part of toolResult.content) {
+			if (part instanceof vscode.LanguageModelTextPart) {
+				size += await sizing.countTokens(part.value);
 			}
 		}
 
-		if (plainText) {
-			const text = plainText;
-			const promptSize = await sizing.countTokens(text);
-
-			return {
-				promptPiece: <ToolMessage toolCallId={getToolCallId(toolCall)}>
-					<meta value={new ToolResultMetadata(getToolCallId(toolCall), toolResult)}></meta>
-					{text}
-				</ToolMessage>, hasError: false, size: promptSize
-			};
-		}
-
-		return { promptPiece: <></>, hasError: false, size: 0 };
-	}
-
-	private async _getToolCallResult(tool: vscode.LanguageModelToolInformation, toolCall: vscode.LanguageModelToolCallPart, toolInvocationToken: vscode.ChatParticipantToolToken | undefined, sizing: PromptSizing) {
-		const token = new vscode.CancellationTokenSource().token;
-
-		const toolResult = await vscode.lm.invokeTool(
-			tool.name,
-			{
-				parameters: toolCall.parameters,
-				toolInvocationToken: toolInvocationToken,
-				tokenizationOptions: {
-					tokenBudget: sizing.tokenBudget,
-					countTokens: async (text, token) => {
-						return sizing.countTokens(text, token);
-					}
-				}
-			},
-			token
-		);
-
-		return toolResult;
+		return size;
 	}
 
 	private async _processImageOutput(toolCallName: string, base64Png: string, sizing: PromptSizing) {
@@ -539,18 +520,35 @@ export class ToolResultMetadata extends PromptMetadata {
 	}
 }
 
-export function getToolResultValue<T>(result: vscode.LanguageModelToolResult | undefined, mime: string): T | undefined {
+export function isError(e: unknown): e is Error {
+	return e instanceof Error || (
+		typeof e === 'object' &&
+		e !== null &&
+		typeof (e as Error).message === 'string' &&
+		typeof (e as Error).name === 'string'
+	);
+}
+
+export function isTextPart(e: unknown): e is vscode.LanguageModelTextPart {
+	return e instanceof vscode.LanguageModelTextPart || !!((e as vscode.LanguageModelTextPart).value);
+}
+
+export function getToolResultValue<T>(result: vscode.LanguageModelToolResult | Error | undefined, mime: string): T | undefined {
 	if (!result) {
 		return;
 	}
-	const item = result.content.filter(c => c instanceof vscode.LanguageModelPromptTsxPart).find(c => c.mime === mime);
-	if (!item && mime === 'text/plain') {
-		return result.content.find(c => c instanceof vscode.LanguageModelTextPart)?.value as T;
+
+	if ((result as vscode.LanguageModelToolResult).content) {
+		const content = (result as vscode.LanguageModelToolResult).content;
+		const item = content.filter(c => (c instanceof vscode.LanguageModelPromptTsxPart)).find(c => c.mime === mime);
+		if (!item && mime === 'text/plain') {
+			return content.filter(c => isTextPart(c)).map(c => c.value).join('\n') as unknown as T;
+		}
+		return item?.value as T;
 	}
-	return item?.value as T;
 }
 
 export function getToolCallId(tool: vscode.LanguageModelToolCallPart) {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	return tool.callId || (tool as any).toolCallId
+	return tool.callId || (tool as any).toolCallId;
 }

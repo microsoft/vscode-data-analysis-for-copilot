@@ -8,6 +8,7 @@ import type { Kernel } from '../pyodide/node/index';
 import { logger } from './logger';
 
 export const ErrorMime = 'application/vnd.code.notebook.error';
+const ImagePrefix = `8a59d504`;
 
 interface IFindFilesParameters {
 	pattern: string;
@@ -59,7 +60,7 @@ export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParamet
 	public static Id = 'dachat_data_runPython';
 	private _kernel: Kernel;
 	private pendingRequests: Promise<unknown> = Promise.resolve();
-	constructor(context: vscode.ExtensionContext) {
+	constructor(readonly context: vscode.ExtensionContext) {
 		const pyodidePath = vscode.Uri.joinPath(context.extensionUri, 'pyodide');
 		const kernelPath = vscode.Uri.joinPath(pyodidePath, 'node', 'index.js').fsPath;
 		const workerPath = vscode.Uri.joinPath(pyodidePath, 'node', 'comlink.worker.js').fsPath;
@@ -104,17 +105,11 @@ export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParamet
 		}
 
 		if (result && result['image/png']) {
-			content.push(new vscode.LanguageModelPromptTsxPart(result['image/png'], 'image/png'));
+			content.push(await this._processImageOutput(result['image/png']));
 		}
 
 		if (result && result['application/vnd.code.notebook.error']) {
-			const error = result['application/vnd.code.notebook.error'] as Error;
-			// We need to ensure we pass back plain objects to VS Code that can be serialized..
-			content.push(new vscode.LanguageModelPromptTsxPart({
-				name: error.name || '',
-				message: error.message || '',
-				stack: error.stack || ''
-			}, 'application/vnd.code.notebook.error'));
+			throw result['application/vnd.code.notebook.error'] as Error;
 		}
 		return new vscode.LanguageModelToolResult(content);
 	}
@@ -127,6 +122,40 @@ export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParamet
 		return {
 			invocationMessage: `Executing Code${reasonMessage}`
 		};
+	}
+
+	private async _processImageOutput(base64Png: string) {
+		const userMessageWithWithImageFromToolCall = `Return this image link in your response. Do not modify the markdown image link at all. The path is already absolute local file path, do not put "https" or "blob" in the link`;
+		if (this.context.storageUri) {
+			const imagePath = await this._saveImage(this.context.storageUri, RunPythonTool.Id, Buffer.from(base64Png, 'base64'));
+			if (imagePath) {
+				const markdownTextForImage = `The image generated from the code is ![${RunPythonTool.Id} result](${imagePath}). You can give this markdown link to users!`;
+				return new vscode.LanguageModelTextPart(markdownTextForImage + '\n' + userMessageWithWithImageFromToolCall);
+			}
+		}
+
+		const markdownTextForImage = `![${RunPythonTool.Id} result](data:image/png;base64,${base64Png})`;
+		return new vscode.LanguageModelTextPart(markdownTextForImage + '\n' + userMessageWithWithImageFromToolCall);
+	}
+
+	private async _saveImage(storageUri: vscode.Uri, tool: string, imageBuffer: Buffer): Promise<string | undefined> {
+		try {
+			await vscode.workspace.fs.stat(storageUri);
+		} catch {
+			await vscode.workspace.fs.createDirectory(storageUri);
+		}
+
+		const storagePath = storageUri.fsPath;
+		const imagePath = path.join(storagePath, `result-${tool}-${ImagePrefix}-${Date.now()}.png`);
+		const imageUri = vscode.Uri.file(imagePath);
+		try {
+			await vscode.workspace.fs.writeFile(imageUri, imageBuffer);
+			const encodedPath = encodeURI(imageUri.fsPath);
+			return encodedPath;
+		} catch (ex) {
+			logger.error('Error saving image', ex);
+			return undefined;
+		}
 	}
 }
 
