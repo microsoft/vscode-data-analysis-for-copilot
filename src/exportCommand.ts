@@ -6,22 +6,22 @@ import * as fs from 'fs';
 import { EOL } from 'os';
 import { unescape } from 'querystring';
 import { promisify } from 'util';
-import { CancellationToken, ChatContext, ChatRequest, ChatResponseMarkdownPart, ChatResponseStream, ChatResponseTurn, ExtensionContext, l10n, NotebookCellData, NotebookCellKind, NotebookCellOutput, NotebookCellOutputItem, NotebookData, ThemeIcon, window, workspace } from "vscode";
-import { getToolResultValue, TsxToolUserMetadata } from "./base";
+import { CancellationToken, ChatContext, ChatRequest, ChatResponseMarkdownPart, ChatResponseStream, ChatResponseTurn, ExtensionContext, l10n, NotebookCellData, NotebookCellKind, NotebookCellOutput, NotebookData, ThemeIcon, window, workspace } from "vscode";
+import { getToolResultValue, isErrorMessageResponse, TsxToolUserMetadata } from "./base";
 import { logger } from "./logger";
-import { base64ToUint8Array, uint8ArrayToBase64 } from "./platform/common/string";
+import { uint8ArrayToBase64 } from "./platform/common/string";
 import { ErrorMime, RunPythonTool } from "./tools";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { default: filenamify } = require('filenamify') as typeof import('filenamify', { with: { 'resolution-mode': 'import' } });
 
 const JupyterNotebookView = 'jupyter-notebook';
-enum CellOutputMimeTypes {
-	error = 'application/vnd.code.notebook.error',
-	stderr = 'application/vnd.code.notebook.stderr',
-	stdout = 'application/vnd.code.notebook.stdout'
-}
+// enum CellOutputMimeTypes {
+// 	error = 'application/vnd.code.notebook.error',
+// 	stderr = 'application/vnd.code.notebook.stderr',
+// 	stdout = 'application/vnd.code.notebook.stdout'
+// }
 
-const textMimeTypes = ['text/plain', 'text/markdown', CellOutputMimeTypes.stderr, CellOutputMimeTypes.stdout];
+// const textMimeTypes = ['text/plain', 'text/markdown', CellOutputMimeTypes.stderr, CellOutputMimeTypes.stdout];
 export class Exporter {
 	private readonly jupyterExporter: JupyterNotebookExporter;
 	private readonly pythonExporter: PythonScriptExporter;
@@ -80,16 +80,16 @@ export class JupyterNotebookExporter {
 
 	public async export(request: ChatRequest,
 		chatContext: ChatContext,
-		stream: ChatResponseStream,
-		token: CancellationToken): Promise<NotebookData | undefined> {
+		_stream: ChatResponseStream,
+		_token: CancellationToken): Promise<NotebookData | undefined> {
 		const history = chatContext.history;
-		const responses: ChatResponseTurn[] = history.filter(h => h instanceof ChatResponseTurn);
+		const responses: ChatResponseTurn[] = history.filter(h => (h instanceof ChatResponseTurn)).filter(h => h.command !== 'export');
 		if (!responses.length) {
 			window.showInformationMessage(l10n.t('No history to export'));
 			return;
 		}
 		const cells: NotebookCellData[] = [];
-		for (const response of history) {
+		for (const response of responses) {
 			if (!(response instanceof ChatResponseTurn)) {
 				continue;
 			}
@@ -101,7 +101,7 @@ export class JupyterNotebookExporter {
 
 				round.toolCalls.filter(tool => tool.name === RunPythonTool.Id).forEach(tool => {
 					const result = round.response[tool.callId] || {};
-					if (getToolResultValue(result, ErrorMime)) {
+					if (getToolResultValue(result, ErrorMime) || isErrorMessageResponse(getToolResultValue<string>(result, 'text/plain') || '')) {
 						logger.debug(`Ignoring tool call as there was an error`);
 						return;
 					}
@@ -117,24 +117,30 @@ export class JupyterNotebookExporter {
 					const outputs: NotebookCellOutput[] = []
 					codeCell.outputs = outputs;
 					cells.push(codeCell);
-					Object.keys(result).filter(mime => mime !== ErrorMime).forEach(mime => {
-						let value = getToolResultValue<string | string[] | object>(result, mime);
-						if (
-							(mime.startsWith('text/') || textMimeTypes.includes(mime)) &&
-							(Array.isArray(value) || typeof value === 'string')
-						) {
-							const stringValue = Array.isArray(value) ? concatMultilineString(value as string[]) : value;
-							outputs.push(new NotebookCellOutput([NotebookCellOutputItem.text(stringValue, mime)]));
-						} else if (mime.startsWith('image/') && typeof value === 'string') {
-							outputs.push(new NotebookCellOutput([new NotebookCellOutputItem(base64ToUint8Array(value), mime)]));
-						} else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-							outputs.push(new NotebookCellOutput([NotebookCellOutputItem.text(JSON.stringify(value), mime)]));
-						} else {
-							// For everything else, treat the data as strings (or multi-line strings).
-							value = Array.isArray(value) ? concatMultilineString(value) : value;
-							outputs.push(new NotebookCellOutput([NotebookCellOutputItem.text(value as string, mime)]));
-						}
-					});
+
+					// result.content.forEach((output) =>{
+					// 	if (isTextPart(output) && output.value){
+					// 		outputs.push(new NotebookCellOutput([NotebookCellOutputItem.stdout(output.value)]));
+					// 	}
+					// 	// let value = getToolResultValue<string | string[] | object>(result, mime);
+					// 	// if (typeof value === 'undefined') {
+					// 	// 	return;
+					// 	// } else if (
+					// 	// 	(mime.startsWith('text/') || textMimeTypes.includes(mime)) &&
+					// 	// 	(Array.isArray(value) || typeof value === 'string')
+					// 	// ) {
+					// 	// 	const stringValue = Array.isArray(value) ? concatMultilineString(value as string[]) : value;
+					// 	// 	outputs.push(new NotebookCellOutput([NotebookCellOutputItem.text(stringValue, mime)]));
+					// 	// } else if (mime.startsWith('image/') && typeof value === 'string') {
+					// 	// 	outputs.push(new NotebookCellOutput([new NotebookCellOutputItem(base64ToUint8Array(value), mime)]));
+					// 	// } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+					// 	// 	outputs.push(new NotebookCellOutput([NotebookCellOutputItem.text(JSON.stringify(value), mime)]));
+					// 	// } else {
+					// 	// 	// For everything else, treat the data as strings (or multi-line strings).
+					// 	// 	value = Array.isArray(value) ? concatMultilineString(value) : value;
+					// 	// 	outputs.push(new NotebookCellOutput([NotebookCellOutputItem.text(value as string, mime)]));
+					// 	// }
+					// });
 				})
 			}
 

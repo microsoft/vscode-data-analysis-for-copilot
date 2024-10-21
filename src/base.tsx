@@ -15,7 +15,6 @@ import {
 	UserMessage
 } from '@vscode/prompt-tsx';
 import { Chunk, TextChunk, ToolCall, ToolMessage, ToolResult } from '@vscode/prompt-tsx/dist/base/promptElements';
-import * as path from 'path';
 import * as vscode from "vscode";
 import { logger } from './logger';
 import { RunPythonTool } from './tools';
@@ -34,6 +33,14 @@ export function isUserMessageWithImageFromToolCall(message: string) {
 
 export function isFinalUserMessageInResponseToToolCall(message: string) {
 	return message.includes('Above is the result of calling the functions') && message.includes('Try your best to utilize the request, response from previous chat history.Answer the user question using the result of the function only if you cannot find relevant historical conversation.');
+}
+
+function getErrorMessagePrompt(errorContent: string) {
+	return `The tool returned an error, analyze this error and attempt to resolve this. Error: ${errorContent}`;
+}
+
+export function isErrorMessageResponse(message: string) {
+	return message.indexOf('The tool returned an error, analyze this error and attempt to resolve this. Error') >= 0;
 }
 
 function generateUserMessageForToolResponse(toolCallIds: string) {
@@ -408,7 +415,7 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 
 		if (isError(toolResult)) {
 			const errorContent = [toolResult.name || '', toolResult.message || '', toolResult.stack || ''].filter((part) => part).join('\n');
-			const errorMessage = `The tool returned an error, analyze this error and attempt to resolve this. Error: ${errorContent}`;
+			const errorMessage = getErrorMessagePrompt(errorContent);
 			const result = new vscode.LanguageModelToolResult([new vscode.LanguageModelTextPart(errorMessage)]);
 			const size = await sizing.countTokens(errorMessage);
 			return {

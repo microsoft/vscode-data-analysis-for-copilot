@@ -96,8 +96,7 @@
                     {
                         "description": "Export the result of the analysis along with the Python code into multiple formats",
                         "isSticky": false,
-                        "name": "export",
-                        "when": "false"
+                        "name": "export"
                     }
                 ]
             }
