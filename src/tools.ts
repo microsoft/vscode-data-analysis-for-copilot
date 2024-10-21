@@ -40,7 +40,7 @@ export class FindFilesTool implements vscode.LanguageModelTool<IFindFilesParamet
 		return new vscode.LanguageModelToolResult(content);
 	}
 
-	async prepareToolInvocation(
+	async prepareInvocation(
 		options: vscode.LanguageModelToolInvocationPrepareOptions<IFindFilesParameters>,
 		_token: vscode.CancellationToken
 	) {
@@ -119,7 +119,7 @@ export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParamet
 		return new vscode.LanguageModelToolResult(content);
 	}
 
-	async prepareToolInvocation(
+	async prepareInvocation(
 		options: vscode.LanguageModelToolInvocationPrepareOptions<IRunPythonParameters>,
 		_token: vscode.CancellationToken
 	) {
