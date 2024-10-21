@@ -4,9 +4,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { assert } from 'chai';
-// import sinon from 'sinon';
 import { CancellationTokenSource, ChatResponseMarkdownPart, commands, extensions } from 'vscode';
-import { getToolCallId, getToolResultValue, ToolCallRound } from '../base';
+import { getToolResultValue, ToolCallRound } from '../base';
 import { DataAgent } from '../dataAgent';
 import { FindFilesTool, RunPythonTool } from '../tools';
 import { MockChatResponseStream } from './mockResponseStream';
@@ -57,7 +56,7 @@ suite('Extension Test Suite', () => {
 	}
 	function getToolCallAndResult<OutputType>(toolId: typeof FindFilesTool.Id | typeof RunPythonTool.Id, outputMimetype: string, toolcallRound: ToolCallRound) {
 		const toolcall = toolcallRound.toolCalls.find(t => t.name === toolId)!;
-		const result = getToolResultValue<OutputType>(toolcallRound.response[getToolCallId(toolcall)], outputMimetype);
+		const result = getToolResultValue<OutputType>(toolcallRound.response[toolcall.callId], outputMimetype);
 		return {
 			toolcall,
 			result

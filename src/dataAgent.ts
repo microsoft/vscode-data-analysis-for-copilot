@@ -4,7 +4,7 @@
 
 import { ChatMessage, HTMLTracer, PromptRenderer, toVsCodeChatMessages } from '@vscode/prompt-tsx';
 import * as vscode from 'vscode';
-import { DataAgentPrompt, getToolCallId, PromptProps, ToolCallRound, ToolResultMetadata, TsxToolUserMetadata } from './base';
+import { DataAgentPrompt, PromptProps, ToolCallRound, ToolResultMetadata, TsxToolUserMetadata } from './base';
 import { Exporter } from './exportCommand';
 import { logger } from './logger';
 
@@ -133,7 +133,7 @@ export class DataAgent implements vscode.Disposable {
 				logger.info('Token count', result.tokenCount);
 				if (toolResultMetadata?.length) {
 					toolResultMetadata.forEach(meta => {
-						if (currentRound.toolCalls.find(tc => getToolCallId(tc) === meta.toolCallId)) {
+						if (currentRound.toolCalls.find(tc => tc.callId === meta.toolCallId)) {
 							currentRound.response[meta.toolCallId] = meta.result;
 						}
 					});
