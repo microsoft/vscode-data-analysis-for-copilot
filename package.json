@@ -199,7 +199,7 @@
         "unzipper": "^0.12.3"
     },
     "dependencies": {
-        "@vscode/prompt-tsx": "^0.3.0-alpha.5",
+        "@vscode/prompt-tsx": "^0.3.0-alpha.8",
         "filenamify": "^6.0.0"
     }
 }

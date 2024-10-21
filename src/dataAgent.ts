@@ -14,7 +14,7 @@ const MODEL_SELECTOR: vscode.LanguageModelChatSelector = {
 	family: 'gpt-4o'
 };
 
-export function toVsCodeChatMessages(messages: ChatMessage[]) {
+export function toVsCodeChatMessages(messages: ChatMessage[], toolResultMetadata: ToolResultMetadata[]) {
 	return messages.map(m => {
 		switch (m.role) {
 			case ChatRole.Assistant:
@@ -38,13 +38,20 @@ export function toVsCodeChatMessages(messages: ChatMessage[]) {
 				return vscode.LanguageModelChatMessage.User(m.content, m.name);
 			case ChatRole.Function: {
 				const message: vscode.LanguageModelChatMessage = vscode.LanguageModelChatMessage.User('');
+				// const content = toolResultMetadata.find(c => c.toolCallId === m.tool_call_id)?.result.content;
+				// if (m.tool_call_id && content) {
+				// 	message.content2 = [new vscode.LanguageModelToolResultPart(m.tool_call_id!, content)];
+				// }
 				// message.content2 = [new vscode.LanguageModelToolResultPart(m.name, m.content)];
 				return message;
 			}
 			case ChatRole.Tool: {
 				{
 					const message: vscode.LanguageModelChatMessage = vscode.LanguageModelChatMessage.User(m.content);
-					// message.content2 = [new vscode.LanguageModelToolResultPart(m.tool_call_id!, m.content)];
+					const content = toolResultMetadata.find(c => c.toolCallId === m.tool_call_id)?.result.content;
+					if (m.tool_call_id && content) {
+						message.content2 = [new vscode.LanguageModelToolResultPart(m.tool_call_id, content)];
+					}
 					return message;
 				}
 			}
@@ -124,7 +131,7 @@ export class DataAgent implements vscode.Disposable {
 		};
 
 		const result = await this._renderMessages(chat, { userQuery: request.prompt, references: request.references, history: chatContext.history, currentToolCallRounds: [], toolInvocationToken: request.toolInvocationToken, extensionContext: this.extensionContext }, stream);
-		let messages = toVsCodeChatMessages(result.messages);
+		let messages = toVsCodeChatMessages(result.messages, []);
 		const toolReferences = [...request.toolReferences];
 		const toolCallRounds: ToolCallRound[] = [];
 
@@ -169,9 +176,9 @@ export class DataAgent implements vscode.Disposable {
 				toolCallRounds.push(currentRound);
 
 				const result = await this._renderMessages(chat, { userQuery: request.prompt, references: request.references, history: chatContext.history, currentToolCallRounds: toolCallRounds, toolInvocationToken: request.toolInvocationToken, extensionContext: this.extensionContext }, stream);
-				messages = toVsCodeChatMessages(result.messages);
-				logger.info('Token count', result.tokenCount);
 				const toolResultMetadata = result.metadata.getAll(ToolResultMetadata)
+				messages = toVsCodeChatMessages(result.messages, toolResultMetadata);
+				logger.info('Token count', result.tokenCount);
 				if (toolResultMetadata?.length) {
 					toolResultMetadata.forEach(meta => {
 						if (currentRound.toolCalls.find(tc => getToolCallId(tc) === meta.toolCallId)) {

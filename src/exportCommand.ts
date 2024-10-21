@@ -117,7 +117,7 @@ export class JupyterNotebookExporter {
 					codeCell.outputs = outputs;
 					cells.push(codeCell);
 					Object.keys(result).filter(mime => mime !== ErrorMime).forEach(mime => {
-						let value = getToolResultValue<string | string[] | {}>(result, mime);
+						let value = getToolResultValue<string | string[] | object>(result, mime);
 						if (
 							(mime.startsWith('text/') || textMimeTypes.includes(mime)) &&
 							(Array.isArray(value) || typeof value === 'string')
