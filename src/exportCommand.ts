@@ -6,7 +6,7 @@ import * as fs from 'fs';
 import { EOL } from 'os';
 import { unescape } from 'querystring';
 import { promisify } from 'util';
-import { CancellationToken, ChatContext, ChatRequest, ChatResponseMarkdownPart, ChatResponseStream, ChatResponseTurn, ExtensionContext, l10n, NotebookCellData, NotebookCellKind, NotebookCellOutput, NotebookCellOutputItem, NotebookData, ThemeIcon, window, workspace } from "vscode";
+import { CancellationToken, ChatContext, ChatRequest, ChatResponseMarkdownPart, ChatResponseStream, ChatResponseTurn, ExtensionContext, l10n, NotebookCellData, NotebookCellKind, NotebookCellOutput, NotebookData, ThemeIcon, window, workspace } from "vscode";
 import { getToolResultValue, isErrorMessageResponse, TsxToolUserMetadata } from "./base";
 import { logger } from "./logger";
 import { uint8ArrayToBase64 } from "./platform/common/string";
