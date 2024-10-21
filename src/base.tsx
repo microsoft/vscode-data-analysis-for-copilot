@@ -173,7 +173,7 @@ export class DataAgentPrompt extends PromptElement<PromptProps, void> {
 		let endedWithError = false;
 		for (const toolCallRound of this.props.currentToolCallRounds) {
 			toolCallRound.toolCalls.forEach((toolCall) => {
-				const response = getToolResultValue<Error>(toolCallRound.response[getToolCallId(toolCall)], 'application/vnd.code.notebook.error');
+				const response = getToolResultValue<Error>(toolCallRound.response[toolCall.callId], 'application/vnd.code.notebook.error');
 				if (response) {
 					errorCount++;
 					endedWithError = true;
@@ -368,7 +368,7 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 	}
 
 	private async _renderOneRound(round: ToolCallRound, sizing: PromptSizing, toolInvocationToken: vscode.ChatParticipantToolToken | undefined): Promise<{ promptPiece: PromptPiece, hasError: boolean, size: number }> {
-		const assistantToolCalls: ToolCall[] = round.toolCalls.map(tc => ({ type: 'function', function: { name: tc.name, arguments: JSON.stringify(tc.parameters) }, id: getToolCallId(tc) }));
+		const assistantToolCalls: ToolCall[] = round.toolCalls.map(tc => ({ type: 'function', function: { name: tc.name, arguments: JSON.stringify(tc.parameters) }, id: tc.callId }));
 
 		const toolCallIds = round.toolCalls
 			.map((call) => call.name)
@@ -397,7 +397,7 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 		const tool = vscode.lm.tools.find((tool) => tool.name === toolCall.name);
 		if (!tool) {
 			logger.error(`Tool not found: ${toolCall.name}`);
-			return { promptPiece: <ToolMessage toolCallId={getToolCallId(toolCall)}>Tool not found</ToolMessage>, hasError: false, size: await sizing.countTokens('Tool not found') };
+			return { promptPiece: <ToolMessage toolCallId={toolCall.callId}>Tool not found</ToolMessage>, hasError: false, size: await sizing.countTokens('Tool not found') };
 		}
 
 		const toolResult = await this._getToolCallResult(tool, toolCall, resultsFromCurrentRound, toolInvocationToken, sizing);
@@ -408,8 +408,8 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 			const result = new vscode.LanguageModelToolResult([new vscode.LanguageModelTextPart(errorMessage)]);
 			const size = await sizing.countTokens(errorMessage);
 			return {
-				promptPiece: <ToolMessage toolCallId={getToolCallId(toolCall)}>
-					<meta value={new ToolResultMetadata(getToolCallId(toolCall), result)}></meta>
+				promptPiece: <ToolMessage toolCallId={toolCall.callId}>
+					<meta value={new ToolResultMetadata(toolCall.callId, result)}></meta>
 					<TextChunk>{errorMessage}</TextChunk>
 				</ToolMessage>, hasError: true, size: size
 			};
@@ -418,16 +418,16 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 		const promptSize = await this._countToolCallResultsize(toolResult, sizing);
 
 		return {
-			promptPiece: <ToolMessage toolCallId={getToolCallId(toolCall)}>
-				<meta value={new ToolResultMetadata(getToolCallId(toolCall), toolResult)}></meta>
-				<ToolResult data={toolResult}/>
+			promptPiece: <ToolMessage toolCallId={toolCall.callId}>
+				<meta value={new ToolResultMetadata(toolCall.callId, toolResult)}></meta>
+				<ToolResult data={toolResult} />
 			</ToolMessage>, hasError: false, size: promptSize
 		};
 	}
 
 	private async _getToolCallResult(tool: vscode.LanguageModelToolInformation, toolCall: vscode.LanguageModelToolCallPart, resultsFromCurrentRound: Record<string, vscode.LanguageModelToolResult | Error>, toolInvocationToken: vscode.ChatParticipantToolToken | undefined, sizing: PromptSizing) {
-		if (resultsFromCurrentRound[getToolCallId(toolCall)]) {
-			return resultsFromCurrentRound[getToolCallId(toolCall)];
+		if (resultsFromCurrentRound[toolCall.callId]) {
+			return resultsFromCurrentRound[toolCall.callId];
 		}
 
 		const token = new vscode.CancellationTokenSource().token;
@@ -463,51 +463,6 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 		}
 
 		return size;
-	}
-
-	private async _processImageOutput(toolCallName: string, base64Png: string, sizing: PromptSizing) {
-		if (this.props.extensionContext.storageUri) {
-			const imagePath = await this._saveImage(this.props.extensionContext.storageUri, toolCallName, Buffer.from(base64Png, 'base64'));
-			if (imagePath) {
-				const markdownTextForImage = `The image generated from the code is ![${toolCallName} result](${imagePath}). You can give this markdown link to users!`;
-
-				const size = (await sizing.countTokens(markdownTextForImage)) + (await sizing.countTokens(userMessageWithWithImageFromToolCall));
-				return {
-					result: markdownTextForImage,
-					additionalUserMessage: userMessageWithWithImageFromToolCall,
-					size: size
-				};
-			}
-		}
-
-		const markdownTextForImage = `![${toolCallName} result](data:image/png;base64,${base64Png})`;
-		const size = (await sizing.countTokens(markdownTextForImage)) + (await sizing.countTokens(userMessageWithWithImageFromToolCall));
-
-		return {
-			result: markdownTextForImage,
-			additionalUserMessage: userMessageWithWithImageFromToolCall,
-			size: size
-		}
-	}
-
-	private async _saveImage(storageUri: vscode.Uri, tool: string, imageBuffer: Buffer): Promise<string | undefined> {
-		try {
-			await vscode.workspace.fs.stat(storageUri);
-		} catch {
-			await vscode.workspace.fs.createDirectory(storageUri);
-		}
-
-		const storagePath = storageUri.fsPath;
-		const imagePath = path.join(storagePath, `result-${tool}-${ImagePrefix}-${Date.now()}.png`);
-		const imageUri = vscode.Uri.file(imagePath);
-		try {
-			await vscode.workspace.fs.writeFile(imageUri, imageBuffer);
-			const encodedPath = encodeURI(imageUri.fsPath);
-			return encodedPath;
-		} catch (ex) {
-			logger.error('Error saving image', ex);
-			return undefined;
-		}
 	}
 }
 
@@ -546,9 +501,4 @@ export function getToolResultValue<T>(result: vscode.LanguageModelToolResult | E
 		}
 		return item?.value as T;
 	}
-}
-
-export function getToolCallId(tool: vscode.LanguageModelToolCallPart) {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	return tool.callId || (tool as any).toolCallId;
 }
