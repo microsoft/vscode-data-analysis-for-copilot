@@ -7,7 +7,7 @@ import { EOL } from 'os';
 import { unescape } from 'querystring';
 import { promisify } from 'util';
 import { CancellationToken, ChatContext, ChatRequest, ChatResponseMarkdownPart, ChatResponseStream, ChatResponseTurn, ExtensionContext, l10n, NotebookCellData, NotebookCellKind, NotebookCellOutput, NotebookCellOutputItem, NotebookData, ThemeIcon, window, workspace } from "vscode";
-import { getToolCallId, getToolResultValue, TsxToolUserMetadata } from "./base";
+import { getToolResultValue, TsxToolUserMetadata } from "./base";
 import { logger } from "./logger";
 import { base64ToUint8Array, uint8ArrayToBase64 } from "./platform/common/string";
 import { ErrorMime, RunPythonTool } from "./tools";
@@ -100,7 +100,7 @@ export class JupyterNotebookExporter {
 				// Ignore the file search and other tool calls.
 
 				round.toolCalls.filter(tool => tool.name === RunPythonTool.Id).forEach(tool => {
-					const result = round.response[getToolCallId(tool)] || {};
+					const result = round.response[tool.callId] || {};
 					if (getToolResultValue(result, ErrorMime)) {
 						logger.debug(`Ignoring tool call as there was an error`);
 						return;
