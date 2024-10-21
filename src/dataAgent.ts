@@ -4,7 +4,7 @@
 
 import { ChatMessage, ChatRole, HTMLTracer, PromptRenderer } from '@vscode/prompt-tsx';
 import * as vscode from 'vscode';
-import { DataAgentPrompt, PromptProps, ToolCallRound, ToolResultMetadata, TsxToolUserMetadata } from './base';
+import { DataAgentPrompt, getToolCallId, PromptProps, ToolCallRound, ToolResultMetadata, TsxToolUserMetadata } from './base';
 import { Exporter } from './exportCommand';
 import { logger } from './logger';
 
@@ -38,13 +38,13 @@ export function toVsCodeChatMessages(messages: ChatMessage[]) {
 				return vscode.LanguageModelChatMessage.User(m.content, m.name);
 			case ChatRole.Function: {
 				const message: vscode.LanguageModelChatMessage = vscode.LanguageModelChatMessage.User('');
-				message.content2 = [new vscode.LanguageModelToolResultPart(m.name, m.content)];
+				// message.content2 = [new vscode.LanguageModelToolResultPart(m.name, m.content)];
 				return message;
 			}
 			case ChatRole.Tool: {
 				{
 					const message: vscode.LanguageModelChatMessage = vscode.LanguageModelChatMessage.User(m.content);
-					message.content2 = [new vscode.LanguageModelToolResultPart(m.tool_call_id!, m.content)];
+					// message.content2 = [new vscode.LanguageModelToolResultPart(m.tool_call_id!, m.content)];
 					return message;
 				}
 			}
@@ -131,10 +131,10 @@ export class DataAgent implements vscode.Disposable {
 		const runWithFunctions = async (): Promise<void> => {
 			const requestedTool = toolReferences.shift();
 			if (requestedTool) {
-				options.toolChoice = requestedTool.id;
-				options.tools = allTools.filter((tool) => (tool.name === requestedTool.id));
+				options.toolMode = vscode.LanguageModelChatToolMode.Required;
+				options.tools = allTools.filter((tool) => (tool.name === requestedTool.name));
 			} else {
-				options.toolChoice = undefined;
+				options.toolMode = undefined;
 				options.tools = allTools;
 			}
 
@@ -174,7 +174,7 @@ export class DataAgent implements vscode.Disposable {
 				const toolResultMetadata = result.metadata.getAll(ToolResultMetadata)
 				if (toolResultMetadata?.length) {
 					toolResultMetadata.forEach(meta => {
-						if (currentRound.toolCalls.find(tc => tc.toolCallId === meta.toolCallId)) {
+						if (currentRound.toolCalls.find(tc => getToolCallId(tc) === meta.toolCallId)) {
 							currentRound.response[meta.toolCallId] = meta.result;
 						}
 					});
