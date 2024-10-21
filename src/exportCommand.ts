@@ -2,7 +2,6 @@
 *  Copyright (c) Microsoft Corporation and GitHub. All rights reserved.
 *--------------------------------------------------------------------------------------------*/
 
-import filenamify from 'filenamify';
 import * as fs from 'fs';
 import { EOL } from 'os';
 import { unescape } from 'querystring';
@@ -12,6 +11,8 @@ import { getToolCallId, getToolResultValue, TsxToolUserMetadata } from "./base";
 import { logger } from "./logger";
 import { base64ToUint8Array, uint8ArrayToBase64 } from "./platform/common/string";
 import { ErrorMime, RunPythonTool } from "./tools";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { default: filenamify } = require('filenamify') as typeof import('filenamify', { with: { 'resolution-mode': 'import' } });
 
 const JupyterNotebookView = 'jupyter-notebook';
 enum CellOutputMimeTypes {
