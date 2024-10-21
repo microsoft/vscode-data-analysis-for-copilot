@@ -541,7 +541,6 @@ export class ToolResultMetadata extends PromptMetadata {
 
 export function getToolResultValue<T>(result: vscode.LanguageModelToolResult | undefined, mime: string): T | undefined {
 	if (!result) {
-		debugger;
 		return;
 	}
 	const item = result.content.filter(c => c instanceof vscode.LanguageModelPromptTsxPart).find(c => c.mime === mime);
