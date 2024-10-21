@@ -113,17 +113,20 @@ export class Tag extends PromptElement<TagProps> {
 }
 
 class PromptReferenceElement extends PromptElement<PromptReferenceProps> {
-	async render(_state: void, _sizing: PromptSizing): Promise<PromptPiece | undefined> {
+	async render(_state: void, sizing: PromptSizing): Promise<PromptPiece | undefined> {
 		const value = this.props.ref.value;
 		// TODO make context a list of TextChunks so that it can be trimmed
 		if (value instanceof vscode.Uri) {
 			const fileContents = (await vscode.workspace.fs.readFile(value)).toString();
+			const truncatedFileContents =
+				value.fsPath.endsWith('.csv') ? fileContents.substring(0, Math.min(1000, sizing.tokenBudget))
+					: fileContents.substring(0, sizing.tokenBudget);
 			return (
 				<Tag name="context">
 					{!this.props.excludeReferences && <references value={[new PromptReference(value)]} />}
 					{value.fsPath}:<br />
 					``` <br />
-					{fileContents}<br />
+					{truncatedFileContents}<br />
 					```<br />
 				</Tag>
 			);
@@ -146,14 +149,15 @@ class PromptReferenceElement extends PromptElement<PromptReferenceProps> {
 }
 
 export class DataAgentPrompt extends PromptElement<PromptProps, void> {
-	render(_state: void, _sizing: PromptSizing) {
+	render(_state: void, sizing: PromptSizing) {
 		const shouldStopRetry = this.shouldStopRetry();
 
 		const userPrompt = this.replaceReferences(this.props.userQuery, this.props.references);
+		const reserveHistoryToken = sizing.tokenBudget * 0.8;
 		return (
 			<>
 				<Instructions history={this.props.history} priority={1000} />
-				<History history={this.props.history} priority={500} flexGrow={1} toolInvocationToken={this.props.toolInvocationToken} extensionContext={this.props.extensionContext} />
+				<History history={this.props.history} priority={500} flexGrow={1} flexReserve={reserveHistoryToken} toolInvocationToken={this.props.toolInvocationToken} extensionContext={this.props.extensionContext} />
 
 				<PromptReferences
                     references={this.props.references}
