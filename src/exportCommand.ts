@@ -2,16 +2,17 @@
 *  Copyright (c) Microsoft Corporation and GitHub. All rights reserved.
 *--------------------------------------------------------------------------------------------*/
 
-import filenamify from 'filenamify';
 import * as fs from 'fs';
 import { EOL } from 'os';
 import { unescape } from 'querystring';
 import { promisify } from 'util';
 import { CancellationToken, ChatContext, ChatRequest, ChatResponseMarkdownPart, ChatResponseStream, ChatResponseTurn, ExtensionContext, l10n, NotebookCellData, NotebookCellKind, NotebookCellOutput, NotebookCellOutputItem, NotebookData, ThemeIcon, window, workspace } from "vscode";
-import { TsxToolUserMetadata } from "./base";
+import { getToolCallId, getToolResultValue, TsxToolUserMetadata } from "./base";
 import { logger } from "./logger";
 import { base64ToUint8Array, uint8ArrayToBase64 } from "./platform/common/string";
 import { ErrorMime, RunPythonTool } from "./tools";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { default: filenamify } = require('filenamify') as typeof import('filenamify', { with: { 'resolution-mode': 'import' } });
 
 const JupyterNotebookView = 'jupyter-notebook';
 enum CellOutputMimeTypes {
@@ -99,8 +100,8 @@ export class JupyterNotebookExporter {
 				// Ignore the file search and other tool calls.
 
 				round.toolCalls.filter(tool => tool.name === RunPythonTool.Id).forEach(tool => {
-					const result = round.response[tool.toolCallId] || {};
-					if (result[ErrorMime]) {
+					const result = round.response[getToolCallId(tool)] || {};
+					if (getToolResultValue(result, ErrorMime)) {
 						logger.debug(`Ignoring tool call as there was an error`);
 						return;
 					}
@@ -117,7 +118,7 @@ export class JupyterNotebookExporter {
 					codeCell.outputs = outputs;
 					cells.push(codeCell);
 					Object.keys(result).filter(mime => mime !== ErrorMime).forEach(mime => {
-						let value = result[mime];
+						let value = getToolResultValue<string | string[] | object>(result, mime);
 						if (
 							(mime.startsWith('text/') || textMimeTypes.includes(mime)) &&
 							(Array.isArray(value) || typeof value === 'string')
@@ -182,7 +183,7 @@ export class PythonScriptExporter {
 
 		const content = await this.export(request, chatContext, stream, token);
 		if (content) {
-			void workspace.openTextDocument({ language: 'python', content }).then(doc => window.showNotebookDocument(doc));
+			void workspace.openTextDocument({ language: 'python', content }).then(doc => window.showTextDocument(doc));
 		}
 	}
 

@@ -4,7 +4,7 @@
 
 import { ChatMessage, ChatRole, HTMLTracer, PromptRenderer } from '@vscode/prompt-tsx';
 import * as vscode from 'vscode';
-import { DataAgentPrompt, PromptProps, ToolCallRound, ToolResultMetadata, TsxToolUserMetadata } from './base';
+import { DataAgentPrompt, getToolCallId, PromptProps, ToolCallRound, ToolResultMetadata, TsxToolUserMetadata } from './base';
 import { Exporter } from './exportCommand';
 import { logger } from './logger';
 
@@ -14,7 +14,7 @@ const MODEL_SELECTOR: vscode.LanguageModelChatSelector = {
 	family: 'gpt-4o'
 };
 
-export function toVsCodeChatMessages(messages: ChatMessage[]) {
+export function toVsCodeChatMessages(messages: ChatMessage[], toolResultMetadata: ToolResultMetadata[]) {
 	return messages.map(m => {
 		switch (m.role) {
 			case ChatRole.Assistant:
@@ -38,13 +38,20 @@ export function toVsCodeChatMessages(messages: ChatMessage[]) {
 				return vscode.LanguageModelChatMessage.User(m.content, m.name);
 			case ChatRole.Function: {
 				const message: vscode.LanguageModelChatMessage = vscode.LanguageModelChatMessage.User('');
-				message.content2 = [new vscode.LanguageModelToolResultPart(m.name, m.content)];
+				// const content = toolResultMetadata.find(c => c.toolCallId === m.tool_call_id)?.result.content;
+				// if (m.tool_call_id && content) {
+				// 	message.content2 = [new vscode.LanguageModelToolResultPart(m.tool_call_id!, content)];
+				// }
+				// message.content2 = [new vscode.LanguageModelToolResultPart(m.name, m.content)];
 				return message;
 			}
 			case ChatRole.Tool: {
 				{
 					const message: vscode.LanguageModelChatMessage = vscode.LanguageModelChatMessage.User(m.content);
-					message.content2 = [new vscode.LanguageModelToolResultPart(m.tool_call_id!, m.content)];
+					const content = toolResultMetadata.find(c => c.toolCallId === m.tool_call_id)?.result.content;
+					if (m.tool_call_id && content) {
+						message.content2 = [new vscode.LanguageModelToolResultPart(m.tool_call_id, content)];
+					}
 					return message;
 				}
 			}
@@ -124,17 +131,17 @@ export class DataAgent implements vscode.Disposable {
 		};
 
 		const result = await this._renderMessages(chat, { userQuery: request.prompt, references: request.references, history: chatContext.history, currentToolCallRounds: [], toolInvocationToken: request.toolInvocationToken, extensionContext: this.extensionContext }, stream);
-		let messages = toVsCodeChatMessages(result.messages);
+		let messages = toVsCodeChatMessages(result.messages, []);
 		const toolReferences = [...request.toolReferences];
 		const toolCallRounds: ToolCallRound[] = [];
 
 		const runWithFunctions = async (): Promise<void> => {
 			const requestedTool = toolReferences.shift();
 			if (requestedTool) {
-				options.toolChoice = requestedTool.id;
-				options.tools = allTools.filter((tool) => (tool.name === requestedTool.id));
+				options.toolMode = vscode.LanguageModelChatToolMode.Required;
+				options.tools = allTools.filter((tool) => (tool.name === requestedTool.name));
 			} else {
-				options.toolChoice = undefined;
+				options.toolMode = undefined;
 				options.tools = allTools;
 			}
 
@@ -169,12 +176,12 @@ export class DataAgent implements vscode.Disposable {
 				toolCallRounds.push(currentRound);
 
 				const result = await this._renderMessages(chat, { userQuery: request.prompt, references: request.references, history: chatContext.history, currentToolCallRounds: toolCallRounds, toolInvocationToken: request.toolInvocationToken, extensionContext: this.extensionContext }, stream);
-				messages = toVsCodeChatMessages(result.messages);
-				logger.info('Token count', result.tokenCount);
 				const toolResultMetadata = result.metadata.getAll(ToolResultMetadata)
+				messages = toVsCodeChatMessages(result.messages, toolResultMetadata);
+				logger.info('Token count', result.tokenCount);
 				if (toolResultMetadata?.length) {
 					toolResultMetadata.forEach(meta => {
-						if (currentRound.toolCalls.find(tc => tc.toolCallId === meta.toolCallId)) {
+						if (currentRound.toolCalls.find(tc => getToolCallId(tc) === meta.toolCallId)) {
 							currentRound.response[meta.toolCallId] = meta.result;
 						}
 					});

@@ -26,21 +26,18 @@ export class FindFilesTool implements vscode.LanguageModelTool<IFindFilesParamet
 		if (files.length === 0) {
 			files = await vscode.workspace.findFiles(`**/${params.pattern}`, '**/node_modules/**', undefined, token);
 		}
-		const result: vscode.LanguageModelToolResult = {};
-		if (options.requestedContentTypes.includes('text/plain')) {
-			const currentWorkspaceFolders = vscode.workspace.workspaceFolders;
+		const content: vscode.LanguageModelTextPart[] = []
+		const currentWorkspaceFolders = vscode.workspace.workspaceFolders;
 
-			if (currentWorkspaceFolders?.length === 1) {
-				const relativePaths = files.map((file) => vscode.workspace.asRelativePath(file, false));
-				result['text/plain'] =
-					`Found ${files.length} files matching "${params.pattern}":\n${relativePaths.join('\n')}`;
-			} else {
-				const strFiles = files.map((f) => f.fsPath).join('\n');
-				result['text/plain'] = `Found ${files.length} files matching "${params.pattern}":\n${strFiles}.`;
-			}
+		if (currentWorkspaceFolders?.length === 1) {
+			const relativePaths = files.map((file) => vscode.workspace.asRelativePath(file, false));
+			content.push(new vscode.LanguageModelTextPart(`Found ${files.length} files matching "${params.pattern}":\n${relativePaths.join('\n')}`));
+		} else {
+			const strFiles = files.map((f) => f.fsPath).join('\n');
+			content.push(new vscode.LanguageModelTextPart(`Found ${files.length} files matching "${params.pattern}":\n${strFiles}.`));
 		}
 
-		return result;
+		return new vscode.LanguageModelToolResult(content);
 	}
 
 	async prepareToolInvocation(
@@ -101,25 +98,25 @@ export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParamet
 			logger.debug((result as any)[key]);
 		});
 
-		const resultData: { [key: string]: unknown } = {};
+		const content: (vscode.LanguageModelPromptTsxPart | vscode.LanguageModelTextPart)[] = []
 		if (result && result['text/plain']) {
-			resultData['text/plain'] = result['text/plain'];
+			content.push(new vscode.LanguageModelTextPart(result['text/plain']));
 		}
 
 		if (result && result['image/png']) {
-			resultData['image/png'] = result['image/png'];
+			content.push(new vscode.LanguageModelPromptTsxPart(result['image/png'], 'image/png'));
 		}
 
 		if (result && result['application/vnd.code.notebook.error']) {
 			const error = result['application/vnd.code.notebook.error'] as Error;
 			// We need to ensure we pass back plain objects to VS Code that can be serialized..
-			resultData['application/vnd.code.notebook.error'] = {
+			content.push(new vscode.LanguageModelPromptTsxPart({
 				name: error.name || '',
 				message: error.message || '',
 				stack: error.stack || ''
-			};
+			}, 'application/vnd.code.notebook.error'));
 		}
-		return resultData;
+		return new vscode.LanguageModelToolResult(content);
 	}
 
 	async prepareToolInvocation(

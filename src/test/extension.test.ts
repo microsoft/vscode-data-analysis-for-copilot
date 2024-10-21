@@ -6,7 +6,7 @@
 import { assert } from 'chai';
 // import sinon from 'sinon';
 import { CancellationTokenSource, ChatResponseMarkdownPart, commands, extensions } from 'vscode';
-import { ToolCallRound } from '../base';
+import { getToolCallId, getToolResultValue, ToolCallRound } from '../base';
 import { DataAgent } from '../dataAgent';
 import { FindFilesTool, RunPythonTool } from '../tools';
 import { MockChatResponseStream } from './mockResponseStream';
@@ -37,10 +37,10 @@ suite('Extension Test Suite', () => {
 			toolInvocationToken: undefined,
 			toolReferences: [
 				{
-					id: RunPythonTool.Id
+					name: RunPythonTool.Id
 				},
 				{
-					id: FindFilesTool.Id
+					name: FindFilesTool.Id
 				}
 			]
 		},
@@ -57,7 +57,7 @@ suite('Extension Test Suite', () => {
 	}
 	function getToolCallAndResult<OutputType>(toolId: typeof FindFilesTool.Id | typeof RunPythonTool.Id, outputMimetype: string, toolcallRound: ToolCallRound) {
 		const toolcall = toolcallRound.toolCalls.find(t => t.name === toolId)!;
-		const result = toolcallRound.response[toolcall.toolCallId][outputMimetype] as OutputType;
+		const result = getToolResultValue<OutputType>(toolcallRound.response[getToolCallId(toolcall)], outputMimetype);
 		return {
 			toolcall,
 			result
@@ -70,7 +70,7 @@ suite('Extension Test Suite', () => {
 				try {
 					const result = getToolCallAndResult<string>(toolId, outputMimetype, call);
 					assert.isOk(result.toolcall);
-					const found = textToInclude.filter(text => result.result.toLowerCase().includes(text.toLowerCase()));
+					const found = textToInclude.filter(text => result.result?.toLowerCase().includes(text.toLowerCase()));
 					if (found.length === textToInclude.length) {
 						return;
 					}
@@ -84,7 +84,7 @@ suite('Extension Test Suite', () => {
 			const result = getToolCallAndResult<string>(toolId, outputMimetype, toolcall);
 			assert.isOk(result.toolcall);
 			for (const output of textToInclude) {
-				assert.include(result.result.toLowerCase(), output.toLowerCase());
+				assert.include(result.result?.toLowerCase(), output.toLowerCase());
 			}
 		}
 	}
@@ -95,7 +95,7 @@ suite('Extension Test Suite', () => {
 				try {
 					const result = getToolCallAndResult<string>(toolId, outputMimetype, call);
 					assert.isOk(result.toolcall);
-					assert.isAtLeast(result.result.length, 100); // base64}
+					assert.isAtLeast((result.result || '').length, 100); // base64}
 					return;
 				} catch {
 					//
@@ -105,7 +105,7 @@ suite('Extension Test Suite', () => {
 		} else {
 			const result = getToolCallAndResult<string>(toolId, outputMimetype, toolcall);
 			assert.isOk(result.toolcall);
-			assert.isAtLeast(result.result.length, 100); // base64}
+			assert.isAtLeast((result.result || '').length, 100); // base64}
 		}
 	}
 
@@ -139,6 +139,7 @@ suite('Extension Test Suite', () => {
 				try {
 					const result = getToolCallAndResult<Error>(toolId, 'application/vnd.code.notebook.error', call);
 					assert.isOk(result.toolcall);
+					assert.isOk(result.result);
 					error = result.result;
 
 					// There could be other errors in the responses.
