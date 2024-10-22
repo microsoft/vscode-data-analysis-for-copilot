@@ -7,7 +7,7 @@ import { PyodideKernel } from './kernel';
 import { createDeferred, type Deferred } from '../common/async';
 
 function joinPath(separator: string, ...paths: string[]) {
-    return paths.join(separator);
+    return paths.join(separator).replace(/\\/g, '/');
 }
 
 type TextOutputs = Partial<Record<'text/plain' | 'image/png' | 'text/html', string>>;
@@ -41,7 +41,7 @@ export class Kernel {
         packages: string[];
         logger: ILogger;
     }) {
-        const separator = pyodidePath.includes('/') ? '/' : '\\';
+        const separator = '/';
         this.kernel = new PyodideKernel({
             baseUrl: joinPath(separator, pyodidePath),
             pyodideUrl: `file://${joinPath(separator, pyodidePath, 'pyodide.js')}`,
