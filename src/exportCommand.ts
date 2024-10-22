@@ -2,7 +2,6 @@
 *  Copyright (c) Microsoft Corporation and GitHub. All rights reserved.
 *--------------------------------------------------------------------------------------------*/
 
-import filenamify from 'filenamify';
 import * as fs from 'fs';
 import { EOL } from 'os';
 import { unescape } from 'querystring';
@@ -12,6 +11,7 @@ import { getToolResultValue, isErrorMessageResponse, TsxToolUserMetadata } from 
 import { logger } from "./logger";
 import { uint8ArrayToBase64 } from "./platform/common/string";
 import { ErrorMime, RunPythonTool } from "./tools";
+import sanitize from 'sanitize-filename';
 
 const JupyterNotebookView = 'jupyter-notebook';
 // enum CellOutputMimeTypes {
@@ -261,7 +261,7 @@ export async function createAttachments(markdown: string): Promise<{ markdown: s
 		try {
 			const bytes = await promisify(fs.readFile)(unescape(link));
 			const base64 = uint8ArrayToBase64(bytes);
-			name = `${filenamify(name).replace(/ /g, '')}.png`;
+			name = `${sanitize(name).replace(/ /g, '')}.png`;
 			attachments[name] = { 'image/png': base64 };
 			markdown = markdown.replace(link, `attachment:${name}`);
 		} catch (ex) {

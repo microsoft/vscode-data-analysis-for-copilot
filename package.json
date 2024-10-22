@@ -201,6 +201,6 @@
     },
     "dependencies": {
         "@vscode/prompt-tsx": "^0.3.0-alpha.8",
-        "filenamify": "^6.0.0"
+        "sanitize-filename": "^1.6.3"
     }
 }
