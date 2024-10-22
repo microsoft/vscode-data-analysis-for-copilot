@@ -29,7 +29,7 @@ parameters:
 extends:
   template: azure-pipelines/extension/pre-release.yml@templates
   parameters:
-		customNPMRegistry: ''
+    customNPMRegistry: ''
     ghCreateTag: false
     standardizedVersioning: true
     l10nSourcePaths: ./src
