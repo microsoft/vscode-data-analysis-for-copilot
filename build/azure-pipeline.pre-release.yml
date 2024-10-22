@@ -31,7 +31,7 @@ extends:
   parameters:
     ghCreateTag: false
     standardizedVersioning: true
-    # l10nSourcePaths: ./src
+    l10nSourcePaths: ./src
     buildSteps:
       - script: npm ci
         displayName: npm ci
