@@ -6,7 +6,7 @@
     "author": "Microsoft Corporation",
     "homepage": "https://github.com/microsoft/Advanced-Data-Analysis-for-Copilot",
     "icon": "images/icon.png",
-    "version": "0.1.4",
+    "version": "0.1.5",
     "engines": {
         "vscode": "^1.95.0"
     },
@@ -20,10 +20,6 @@
     ],
     "activationEvents": [
         "onChatParticipant:dachat.data"
-    ],
-    "enabledApiProposals": [
-        "chatVariableResolver",
-        "chatProvider"
     ],
     "keywords": [
         "ai",
@@ -117,10 +113,7 @@
                     "required": [
                         "pattern"
                     ]
-                },
-                "supportedContentTypes": [
-                    "text/plain"
-                ]
+                }
             },
             {
                 "name": "dachat_data_runPython",
@@ -142,12 +135,7 @@
                     "required": [
                         "code"
                     ]
-                },
-                "supportedContentTypes": [
-                    "text/plain",
-                    "image/png",
-                    "application/vnd.code.notebook.error"
-                ]
+                }
             }
         ]
     },
@@ -161,11 +149,10 @@
         "watch-tests": "tsc -p . -w --outDir out",
         "compile-types": "tsc -p . --noEmit",
         "watch-types": "tsc -p . -w --noEmit",
-        "download-api": "dts main && dts dev",
         "clean": "npx tsx build/clean.ts",
         "lint": "eslint src",
         "lint-fix": "eslint --fix src",
-        "postinstall": "npm run download-api && npm run downloadPyodide",
+        "postinstall": "npm run downloadPyodide",
         "downloadPyodide": "npx tsx build/download.ts"
     },
     "devDependencies": {
@@ -199,7 +186,7 @@
         "unzipper": "^0.12.3"
     },
     "dependencies": {
-        "@vscode/prompt-tsx": "^0.3.0-alpha.8",
+        "@vscode/prompt-tsx": "^0.3.0-alpha.9",
         "sanitize-filename": "^1.6.3"
     }
 }
