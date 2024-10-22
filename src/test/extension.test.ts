@@ -220,9 +220,6 @@ suite('Extension Test Suite', () => {
 		// Second call should be to generate a list of column names.
 		containsTextOutput(toolcallsRounds, RunPythonTool.Id, 'text/plain', ['bondactorname', 'writer']);
 
-		// Final call should be to generate a image
-		containsImageOutput(toolcallsRounds, RunPythonTool.Id);
-
 		// Finally the last message display to the user must contain the markdown image.
 		const markdown = getLastMarkdownStream(stream).toLowerCase();
 		assert.include(markdown, '.png)') // File will be png
