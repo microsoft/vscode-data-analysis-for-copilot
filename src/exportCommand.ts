@@ -99,8 +99,7 @@ export class JupyterNotebookExporter {
 				// Ignore the file search and other tool calls.
 
 				round.toolCalls.filter(tool => tool.name === RunPythonTool.Id).forEach(tool => {
-					const result = round.response[tool.callId] || {};
-					if (getToolResultValue(result, ErrorMime) || isErrorMessageResponse(getToolResultValue<string>(result, 'text/plain') || '')) {
+					if (isErrorMessageResponse(getToolResultValue(round.response[tool.callId]) || '')) {
 						logger.debug(`Ignoring tool call as there was an error`);
 						return;
 					}

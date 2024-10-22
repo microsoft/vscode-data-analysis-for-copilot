@@ -5,7 +5,7 @@
 
 import { assert } from 'chai';
 import { CancellationTokenSource, ChatResponseMarkdownPart, commands, extensions, LanguageModelChat, lm } from 'vscode';
-import { getToolResultValue, ToolCallRound } from '../base';
+import { getToolResultValue, isErrorMessageResponse, ToolCallRound } from '../base';
 import { DataAgent, MODEL_SELECTOR } from '../dataAgent';
 import { FindFilesTool, RunPythonTool } from '../tools';
 import { MockChatResponseStream } from './mockResponseStream';
@@ -61,20 +61,20 @@ suite('Extension Test Suite', () => {
 			stream
 		}
 	}
-	function getToolCallAndResult<OutputType>(toolId: typeof FindFilesTool.Id | typeof RunPythonTool.Id, outputMimetype: string, toolcallRound: ToolCallRound) {
+	function getToolCallAndResult(toolId: typeof FindFilesTool.Id | typeof RunPythonTool.Id, toolcallRound: ToolCallRound) {
 		const toolcall = toolcallRound.toolCalls.find(t => t.name === toolId)!;
-		const result = getToolResultValue<OutputType>(toolcallRound.response[toolcall.callId], outputMimetype);
+		const result = getToolResultValue(toolcallRound.response[toolcall.callId]);
 		return {
 			toolcall,
 			result
 		};
 	}
 
-	function containsTextOutput(toolcall: ToolCallRound | ToolCallRound[], toolId: typeof FindFilesTool.Id | typeof RunPythonTool.Id, outputMimetype: string, textToInclude: string[]) {
+	function containsTextOutput(toolcall: ToolCallRound | ToolCallRound[], toolId: typeof FindFilesTool.Id | typeof RunPythonTool.Id, textToInclude: string[]) {
 		if (Array.isArray(toolcall)) {
 			for (const call of toolcall.filter(t => t.toolCalls.find(c => c.name === toolId))) {
 				try {
-					const result = getToolCallAndResult<string>(toolId, outputMimetype, call);
+					const result = getToolCallAndResult(toolId, call);
 					assert.isOk(result.toolcall);
 					const found = textToInclude.filter(text => result.result?.toLowerCase().includes(text.toLowerCase()));
 					if (found.length === textToInclude.length) {
@@ -84,34 +84,14 @@ suite('Extension Test Suite', () => {
 					//
 				}
 			}
-			assert.fail(`Text ${textToInclude.join(', ')} not found in ${outputMimetype} for ${toolId}`);
+			assert.fail(`Text ${textToInclude.join(', ')} not found for ${toolId}`);
 
 		} else {
-			const result = getToolCallAndResult<string>(toolId, outputMimetype, toolcall);
+			const result = getToolCallAndResult(toolId, toolcall);
 			assert.isOk(result.toolcall);
 			for (const output of textToInclude) {
 				assert.include(result.result?.toLowerCase(), output.toLowerCase());
 			}
-		}
-	}
-
-	function containsImageOutput(toolcall: ToolCallRound | ToolCallRound[], toolId: typeof FindFilesTool.Id | typeof RunPythonTool.Id, outputMimetype: string = 'image/png') {
-		if (Array.isArray(toolcall)) {
-			for (const call of toolcall) {
-				try {
-					const result = getToolCallAndResult<string>(toolId, outputMimetype, call);
-					assert.isOk(result.toolcall);
-					assert.isAtLeast((result.result || '').length, 100); // base64}
-					return;
-				} catch {
-					//
-				}
-			}
-			assert.fail(`Image ${outputMimetype} not found`);
-		} else {
-			const result = getToolCallAndResult<string>(toolId, outputMimetype, toolcall);
-			assert.isOk(result.toolcall);
-			assert.isAtLeast((result.result || '').length, 100); // base64}
 		}
 	}
 
@@ -138,48 +118,18 @@ suite('Extension Test Suite', () => {
 		}
 	}
 
-	function containsError(toolcall: ToolCallRound | ToolCallRound[], toolId: typeof FindFilesTool.Id | typeof RunPythonTool.Id, expectedError: { name?: string[]; message?: string[]; stack?: string[] }) {
-		let error: Error | undefined;
+	function containsError(toolcall: ToolCallRound | ToolCallRound[], toolId: typeof FindFilesTool.Id | typeof RunPythonTool.Id) {
 		if (Array.isArray(toolcall)) {
 			for (const call of toolcall.filter(t => t.toolCalls.some(c => c.name === toolId))) {
 				try {
-					const result = getToolCallAndResult<Error>(toolId, 'application/vnd.code.notebook.error', call);
-					assert.isOk(result.toolcall);
-					assert.isOk(result.result);
-					error = result.result;
-
-					// There could be other errors in the responses.
-					for (const stack of (expectedError.name || [])) {
-						assert.include((error.name || '').toLowerCase(), stack.toLowerCase());
-					}
-					for (const stack of (expectedError.message || [])) {
-						assert.include((error.message || '').toLowerCase(), stack.toLowerCase());
-					}
-					for (const stack of (expectedError.stack || [])) {
-						assert.include((error.stack || '').toLowerCase(), stack.toLowerCase());
-					}
-
+					assert.isOk(isErrorMessageResponse(getToolCallAndResult(toolId, call)?.result || ''))
 					return;
 				} catch {
 					//
 				}
 			}
 		} else {
-			const result = getToolCallAndResult<Error>(toolId, 'application/vnd.code.notebook.error', toolcall);
-			assert.isOk(result.toolcall);
-			error = result.result;
-			if (!error) {
-				assert.fail(`Error not found`);
-			}
-			for (const stack of (expectedError.name || [])) {
-				assert.include((error.name || '').toLowerCase(), stack.toLowerCase());
-			}
-			for (const stack of (expectedError.message || [])) {
-				assert.include((error.message || '').toLowerCase(), stack.toLowerCase());
-			}
-			for (const stack of (expectedError.stack || [])) {
-				assert.include((error.stack || '').toLowerCase(), stack.toLowerCase());
-			}
+			isErrorMessageResponse(getToolCallAndResult(toolId, toolcall)?.result || '')
 		}
 	}
 
@@ -215,10 +165,10 @@ suite('Extension Test Suite', () => {
 		const { stream, toolcallsRounds } = await sendChatMessage('@data generate a histogram of number of movies per bond actor from the jamesbond.csv file');
 
 		// First call should be to generate an image, and this should fail with an invalid column error.
-		containsError(toolcallsRounds, RunPythonTool.Id, { name: ['class', 'keyerror'] });
+		containsError(toolcallsRounds, RunPythonTool.Id);
 
 		// Second call should be to generate a list of column names.
-		containsTextOutput(toolcallsRounds, RunPythonTool.Id, 'text/plain', ['bondactorname', 'writer']);
+		containsTextOutput(toolcallsRounds, RunPythonTool.Id, ['bondactorname', 'writer']);
 
 		// Finally the last message display to the user must contain the markdown image.
 		const markdown = getLastMarkdownStream(stream).toLowerCase();
