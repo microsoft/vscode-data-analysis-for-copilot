@@ -154,12 +154,14 @@
     },
     "scripts": {
         "vscode:prepublish": "npm run clean && npm run postinstall && npm run compile-extension -- --minify",
-        "compile": "npm run compile-extension",
+        "compile": "npm run compile-types && npm run compile-extension",
         "compile-extension": "esbuild ./src/extension.ts --bundle --external:vscode --outfile=out/extension.js --sourcemap --format=cjs --platform=node --target=node18",
         "watch-extension": "npm run compile-extension -- --watch",
         "watch": "npm run watch-extension",
         "compile-tests": "tsc -p . --outDir out",
         "watch-tests": "tsc -p . -w --outDir out",
+        "compile-types": "tsc -p . --noEmit",
+        "watch-types": "tsc -p . -w --noEmit",
         "download-api": "dts main && dts dev",
         "clean": "npx tsx build/clean.ts",
         "lint": "eslint src",
@@ -199,6 +201,6 @@
     },
     "dependencies": {
         "@vscode/prompt-tsx": "^0.3.0-alpha.8",
-        "filenamify": "^6.0.0"
+        "sanitize-filename": "^1.6.3"
     }
 }

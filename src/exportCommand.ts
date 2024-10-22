@@ -11,8 +11,7 @@ import { getToolResultValue, isErrorMessageResponse, TsxToolUserMetadata } from 
 import { logger } from "./logger";
 import { uint8ArrayToBase64 } from "./platform/common/string";
 import { ErrorMime, RunPythonTool } from "./tools";
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { default: filenamify } = require('filenamify') as typeof import('filenamify', { with: { 'resolution-mode': 'import' } });
+import sanitize from 'sanitize-filename';
 
 const JupyterNotebookView = 'jupyter-notebook';
 // enum CellOutputMimeTypes {
@@ -262,7 +261,7 @@ export async function createAttachments(markdown: string): Promise<{ markdown: s
 		try {
 			const bytes = await promisify(fs.readFile)(unescape(link));
 			const base64 = uint8ArrayToBase64(bytes);
-			name = `${filenamify(name).replace(/ /g, '')}.png`;
+			name = `${sanitize(name).replace(/ /g, '')}.png`;
 			attachments[name] = { 'image/png': base64 };
 			markdown = markdown.replace(link, `attachment:${name}`);
 		} catch (ex) {

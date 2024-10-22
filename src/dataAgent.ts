@@ -9,7 +9,7 @@ import { Exporter } from './exportCommand';
 import { logger } from './logger';
 
 const DATA_AGENT_PARTICIPANT_ID = 'dachat.data';
-const MODEL_SELECTOR: vscode.LanguageModelChatSelector = {
+export const MODEL_SELECTOR: vscode.LanguageModelChatSelector = {
 	vendor: 'copilot',
 	family: 'gpt-4o'
 };
