@@ -4,24 +4,30 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { assert } from 'chai';
-import { CancellationTokenSource, ChatResponseMarkdownPart, commands, extensions } from 'vscode';
+import { CancellationTokenSource, ChatResponseMarkdownPart, commands, extensions, LanguageModelChat, lm } from 'vscode';
 import { getToolResultValue, ToolCallRound } from '../base';
-import { DataAgent } from '../dataAgent';
+import { DataAgent, MODEL_SELECTOR } from '../dataAgent';
 import { FindFilesTool, RunPythonTool } from '../tools';
 import { MockChatResponseStream } from './mockResponseStream';
 
 suite('Extension Test Suite', () => {
 	let dataAgent: DataAgent;
 	let tokenSource: CancellationTokenSource;
+	let model: LanguageModelChat;
 	// let stubRenderMessages: sinon.SinonStub;
 	suiteSetup(async function () {
 		await Promise.all([
 			extensions.getExtension('GitHub.copilot-chat')!.activate(),
-			extensions.getExtension('microsoft.vscode-copilot-data-analysis')!.activate()
+			extensions.getExtension('ms-vscode.vscode-copilot-data-analysis')!.activate()
 		]);
 		await commands.executeCommand('workbench.action.chat.open');
 		tokenSource = new CancellationTokenSource();
-		dataAgent = extensions.getExtension('microsoft.vscode-copilot-data-analysis')!.exports.dataAgent;
+		dataAgent = extensions.getExtension('ms-vscode.vscode-copilot-data-analysis')!.exports.dataAgent;
+		const models = await lm.selectChatModels(MODEL_SELECTOR);
+		if (!models || !models.length) {
+			throw new Error('NO MODELS');
+		}
+		model = models[0];
 	});
 	suiteTeardown(() => {
 		tokenSource.dispose();
@@ -33,6 +39,7 @@ suite('Extension Test Suite', () => {
 			command: undefined,
 			prompt,
 			references: [],
+			model,
 			toolInvocationToken: undefined,
 			toolReferences: [
 				{

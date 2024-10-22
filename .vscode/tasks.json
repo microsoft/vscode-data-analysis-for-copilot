@@ -6,7 +6,8 @@
         {
             "label": "watch",
             "dependsOn": [
-                "npm: watch-extension"
+                "npm: watch-extension",
+				"npm: watch-types"
             ],
             "presentation": {
                 "reveal": "never",
@@ -26,6 +27,18 @@
             "problemMatcher": "$esbuild-watch",
             "isBackground": true,
             "label": "npm: watch-extension",
+            "presentation": {
+                "group": "watch",
+                "reveal": "never"
+            }
+        },
+		{
+            "type": "npm",
+            "script": "watch-types",
+            "group": "build",
+            "problemMatcher": "$tsc-watch",
+            "isBackground": true,
+            "label": "npm: watch-types",
             "presentation": {
                 "group": "watch",
                 "reveal": "never"
