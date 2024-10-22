@@ -167,10 +167,10 @@ export class DataAgentPrompt extends PromptElement<PromptProps, void> {
 				<History history={this.props.history} priority={500} flexGrow={1} flexReserve={reserveHistoryToken} toolInvocationToken={this.props.toolInvocationToken} extensionContext={this.props.extensionContext} />
 
 				<PromptReferences
-                    references={this.props.references}
+					references={this.props.references}
 					flexGrow={2}
-                    priority={450}
-                />
+					priority={450}
+				/>
 
 				<UserMessage priority={1000}>{userPrompt}</UserMessage>
 				<ToolCalls toolCallRounds={this.props.currentToolCallRounds} priority={1000} toolInvocationToken={this.props.toolInvocationToken} extensionContext={this.props.extensionContext} ></ToolCalls>
@@ -184,8 +184,7 @@ export class DataAgentPrompt extends PromptElement<PromptProps, void> {
 		let endedWithError = false;
 		for (const toolCallRound of this.props.currentToolCallRounds) {
 			toolCallRound.toolCalls.forEach((toolCall) => {
-				const response = getToolResultValue<Error>(toolCallRound.response[toolCall.callId], 'application/vnd.code.notebook.error');
-				if (response) {
+				if (isErrorMessageResponse(getToolResultValue(toolCallRound.response[toolCall.callId]) || '')) {
 					errorCount++;
 					endedWithError = true;
 				}
@@ -499,17 +498,9 @@ export function isTextPart(e: unknown): e is vscode.LanguageModelTextPart {
 	return e instanceof vscode.LanguageModelTextPart || !!((e as vscode.LanguageModelTextPart).value);
 }
 
-export function getToolResultValue<T>(result: vscode.LanguageModelToolResult | Error | undefined, mime: string): T | undefined {
+export function getToolResultValue(result: vscode.LanguageModelToolResult | undefined): string | undefined {
 	if (!result) {
 		return;
 	}
-
-	if ((result as vscode.LanguageModelToolResult).content) {
-		const content = (result as vscode.LanguageModelToolResult).content;
-		const item = content.filter(c => (c instanceof vscode.LanguageModelPromptTsxPart)).find(c => c.mime === mime);
-		if (!item && mime === 'text/plain') {
-			return content.filter(c => isTextPart(c)).map(c => c.value).join('\n') as unknown as T;
-		}
-		return item?.value as T;
-	}
+	return isTextPart(result) ? result.value : result.content.find(c => isTextPart(c))?.value;
 }

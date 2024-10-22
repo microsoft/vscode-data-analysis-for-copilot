@@ -23,7 +23,6 @@
     ],
     "enabledApiProposals": [
         "chatVariableResolver",
-        "lmTools",
         "chatProvider"
     ],
     "keywords": [
