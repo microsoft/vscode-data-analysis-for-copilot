@@ -152,7 +152,8 @@
         "clean": "npx tsx build/clean.ts",
         "lint": "eslint src",
         "lint-fix": "eslint --fix src",
-        "postinstall": "npm run downloadPyodide",
+        "download-api": "dts main",
+        "postinstall": "npm run download-api && npm run downloadPyodide",
         "downloadPyodide": "npx tsx build/download.ts"
     },
     "devDependencies": {
@@ -186,7 +187,7 @@
         "unzipper": "^0.12.3"
     },
     "dependencies": {
-        "@vscode/prompt-tsx": "^0.3.0-alpha.9",
+        "@vscode/prompt-tsx": "^0.3.0-alpha.10",
         "sanitize-filename": "^1.6.3"
     }
 }
