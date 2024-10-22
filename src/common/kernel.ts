@@ -61,7 +61,7 @@ export abstract class BasePyodideKernel extends BaseKernel implements IKernel {
 
     protected initRemoteOptions(options: PyodideKernel.IOptions): IPyodideWorkerKernel.IOptions {
         const { pyodideUrl } = options;
-        const indexUrl = pyodideUrl.slice(0, pyodideUrl.lastIndexOf('/') + 1);
+        const indexUrl = options.indexUrl.slice(0, pyodideUrl.lastIndexOf('/') + 1);
         const baseUrl = options.baseUrl || PageConfig.getBaseUrl();
 
         const pipliteUrls = [...(options.pipliteUrls || [])];

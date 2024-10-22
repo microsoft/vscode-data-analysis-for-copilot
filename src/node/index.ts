@@ -44,7 +44,7 @@ export class Kernel {
         const separator = pyodidePath.includes('/') ? '/' : '\\';
         this.kernel = new PyodideKernel({
             baseUrl: joinPath(separator, pyodidePath),
-            pyodideUrl: joinPath(separator, pyodidePath, 'pyodide.js'),
+            pyodideUrl: `file://${joinPath(separator, pyodidePath, 'pyodide.js')}`,
             indexUrl: joinPath(separator, pyodidePath),
             disablePyPIFallback: false,
             location,
