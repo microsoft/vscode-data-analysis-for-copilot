@@ -21,6 +21,9 @@
     "activationEvents": [
         "onChatParticipant:dachat.data"
     ],
+    "extensionDependencies": [
+        "GitHub.copilot-chat"
+    ],
     "keywords": [
         "ai",
         "analysis",
