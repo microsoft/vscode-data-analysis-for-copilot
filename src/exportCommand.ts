@@ -264,7 +264,8 @@ export async function createAttachments(markdown: string): Promise<{ markdown: s
 	const attachments: Record<string, { 'image/png': string }> = {};
 	await Promise.all(images.map(async ({ name, link }) => {
 		try {
-			const bytes = await promisify(fs.readFile)(unescape(link));
+			const file = unescape(link.startsWith('file://') ? link.substring('file://'.length) : link);
+			const bytes = await promisify(fs.readFile)(file);
 			const base64 = uint8ArrayToBase64(bytes);
 			name = `${sanitize(name).replace(/ /g, '')}.png`;
 			attachments[name] = { 'image/png': base64 };
