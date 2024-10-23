@@ -110,11 +110,15 @@ export class JupyterNotebookExporter {
 						return;
 					}
 
-					cells.push(new NotebookCellData(NotebookCellKind.Markup, parameters.reason, 'markdown'));
-					const codeCell = new NotebookCellData(NotebookCellKind.Code, parameters.code, 'python');
-					const outputs: NotebookCellOutput[] = []
-					codeCell.outputs = outputs;
-					cells.push(codeCell);
+					if (parameters.reason) {
+						cells.push(new NotebookCellData(NotebookCellKind.Markup, parameters.reason, 'markdown'));
+					}
+					if (parameters.code) {
+						const codeCell = new NotebookCellData(NotebookCellKind.Code, parameters.code, 'python');
+						const outputs: NotebookCellOutput[] = []
+						codeCell.outputs = outputs;
+						cells.push(codeCell);
+					}
 
 					// result.content.forEach((output) =>{
 					// 	if (isTextPart(output) && output.value){
@@ -145,13 +149,15 @@ export class JupyterNotebookExporter {
 			const resultCells = new Map<number, NotebookCellData>();
 			await Promise.all(response.response.filter(r => r instanceof ChatResponseMarkdownPart).map(async (r, i) => {
 				const { markdown, attachments } = await createAttachments(r.value.value);
-				const cell = new NotebookCellData(NotebookCellKind.Markup, markdown, 'markdown');
-				if (attachments) {
-					cell.metadata = {
-						attachments
+				if (markdown) {
+					const cell = new NotebookCellData(NotebookCellKind.Markup, markdown, 'markdown');
+					if (attachments) {
+						cell.metadata = {
+							attachments
+						}
 					}
+					resultCells.set(i, cell);
 				}
-				resultCells.set(i, cell);
 			}));
 			Array.from(resultCells.values()).forEach(cell => cells.push(cell));
 		}
