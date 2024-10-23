@@ -6,7 +6,7 @@
     "author": "Microsoft Corporation",
     "homepage": "https://github.com/microsoft/Advanced-Data-Analysis-for-Copilot",
     "icon": "images/icon.png",
-    "version": "0.1.7",
+    "version": "0.1.8",
     "engines": {
         "vscode": "^1.95.0"
     },
@@ -87,6 +87,27 @@
                 "description": "I can help you with data analytics",
                 "sampleRequest": "Help me analyze the csv file",
                 "isSticky": true,
+                "disambiguation": [
+                    {
+                        "category": "analysis",
+                        "description": "Performs analysis on some data provided by user either as a file or content",
+                        "examples": [
+                            "Analyze the contents of sample.csv",
+                            "What is the correlation between house price and income in sample.csv",
+                            "What is the median house price in sample.csv"
+                        ]
+                    },
+                    {
+                        "category": "visualize",
+                        "description": "Display visualizations based on some analysis or data provided by user either as a file or content",
+                        "examples": [
+                            "Visualize the contents of sample.csv",
+                            "Generate a plot of average house prices by state",
+                            "Display the correlation between house price and income in sample.csv",
+                            "Display a chart with the median house price in sample.csv"
+                        ]
+                    }
+                ],
                 "commands": [
                     {
                         "description": "Export the result of the analysis along with the Python code into multiple formats",

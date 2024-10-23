@@ -10,6 +10,9 @@ if (fs.existsSync(path.join(__dirname, '..', 'out'))) {
 if (fs.existsSync(path.join(__dirname, '..', 'pyodide'))) {
 	fs.rmSync(path.join(__dirname, '..', 'pyodide'), { recursive: true });
 }
+if (fs.existsSync(path.join(__dirname, '..', 'resources', 'pyodide.zip'))) {
+	fs.rmSync(path.join(__dirname, '..', 'resources', 'pyodide.zip'), { recursive: true });
+}
 if (fs.existsSync(path.join(__dirname, '..', 'temp'))) {
 	fs.rmSync(path.join(__dirname, '..', 'temp'), { recursive: true });
 }
