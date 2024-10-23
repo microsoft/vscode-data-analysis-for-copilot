@@ -153,8 +153,7 @@ export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParamet
 		const imageUri = vscode.Uri.file(imagePath);
 		try {
 			await vscode.workspace.fs.writeFile(imageUri, imageBuffer);
-			const encodedPath = encodeURI(imageUri.fsPath);
-			return encodedPath;
+			return imageUri.toString();
 		} catch (ex) {
 			logger.error('Error saving image', ex);
 			return undefined;

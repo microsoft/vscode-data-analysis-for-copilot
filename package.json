@@ -6,7 +6,7 @@
     "author": "Microsoft Corporation",
     "homepage": "https://github.com/microsoft/Advanced-Data-Analysis-for-Copilot",
     "icon": "images/icon.png",
-    "version": "0.1.6",
+    "version": "0.1.7",
     "engines": {
         "vscode": "^1.95.0"
     },
