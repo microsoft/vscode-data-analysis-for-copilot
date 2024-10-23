@@ -10,7 +10,7 @@ import { CancellationToken, ChatContext, ChatRequest, ChatResponseMarkdownPart, 
 import { getToolResultValue, isErrorMessageResponse, TsxToolUserMetadata } from "./base";
 import { logger } from "./logger";
 import { uint8ArrayToBase64 } from "./platform/common/string";
-import { ErrorMime, RunPythonTool } from "./tools";
+import { RunPythonTool } from "./tools";
 import sanitize from 'sanitize-filename';
 
 const JupyterNotebookView = 'jupyter-notebook';

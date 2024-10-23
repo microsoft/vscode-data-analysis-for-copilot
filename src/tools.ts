@@ -68,8 +68,11 @@ export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParamet
 		const { Kernel } = require(kernelPath) as typeof import('../pyodide/node/index');
 		const folder = vscode.workspace.workspaceFolders?.length ? vscode.workspace.workspaceFolders[0].uri.fsPath : ''
 		this._kernel = new Kernel({
-			pyodidePath: pyodidePath.fsPath, workerPath, location: folder, packages: [
-				vscode.Uri.file(path.join(pyodidePath.fsPath, 'seaborn-0.13.2-py3-none-any.whl')).toString()
+			pyodidePath: pyodidePath.fsPath.replace(/\\/g, '/'),
+			workerPath: workerPath.replace(/\\/g, '/'),
+			location: folder.replace(/\\/g, '/'),
+			packages: [
+				vscode.Uri.joinPath(pyodidePath, 'seaborn-0.13.2-py3-none-any.whl').fsPath.replace(/\\/g, '/')
 			],
 			logger: {
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
