@@ -6,7 +6,7 @@ import type { IExecuteRequestMsg } from '@jupyterlab/services/lib/kernel/message
 import { PyodideKernel } from './kernel';
 import { createDeferred, type Deferred } from '../common/async';
 
-function joinPath(separator: string, ...paths: string[]) {
+export function joinPath(separator: string, ...paths: string[]) {
     return paths.join(separator).replace(/\\/g, '/');
 }
 
@@ -41,13 +41,21 @@ export class Kernel {
         packages: string[];
         logger: ILogger;
     }) {
-        const separator = '/';
+        const separator = '/'; // Pyodide requires paths to be in the form of URLs (even on Windows).
+        packages = packages
+            .map((p) => joinPath(separator, p))
+            .map((p) =>
+                p.includes('/') && !p.toLowerCase().startsWith('http') && !p.toLowerCase().startsWith('file')
+                    ? `file://${p}`
+                    : p
+            );
+
         this.kernel = new PyodideKernel({
             baseUrl: joinPath(separator, pyodidePath),
             pyodideUrl: `file://${joinPath(separator, pyodidePath, 'pyodide.js')}`,
             indexUrl: joinPath(separator, pyodidePath),
             disablePyPIFallback: false,
-            location,
+            location: joinPath(separator, location),
             logger,
             mountDrive: true,
             pipliteUrls: [`file://${joinPath(separator, pyodidePath, 'pypi', 'all.json')}`],
@@ -59,7 +67,7 @@ export class Kernel {
                 packages: Array.from(new Set(['matplotlib', 'pandas'].concat(packages)))
             },
             name: 'pyodide',
-            workerPath,
+            workerPath: joinPath(separator, workerPath),
             sendMessage: (msg: KernelMessage.IMessage<KernelMessage.MessageType>) => {
                 if (!this.completed) {
                     return;

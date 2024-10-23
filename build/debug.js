@@ -7,7 +7,19 @@ const { Kernel } = require('../pyodide/node/index');
 const pyodideDir = '<pyodide>';
 
 async function main() {
-    const kernel = new Kernel(pyodideDir, `${__dirname}/../pyodide/node/comlink.worker.js`, __dirname);
+    const kernel = new Kernel({
+        logger: {
+            log: console.log,
+            error: console.error,
+            warn: console.warn,
+            info: console.info,
+            debug: console.debug
+        },
+        packages: [],
+        pyodidePath: pyodideDir,
+        location: __dirname.replace(/\\/g, '/'),
+        workerPath: `${__dirname}/../pyodide/node/comlink.worker.js`
+    });
     try {
         const outputs = await kernel.execute('print(1243)');
         console.log(outputs);

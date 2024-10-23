@@ -11,6 +11,7 @@ import { IPyodideWorkerKernel, IRemotePyodideWorkerKernel } from './tokens';
 import { pipliteWheelUrl } from './_pypi';
 import { SyncMessaging } from './syncMessagingMain';
 import type { ILogger, IWorker } from './types';
+import { PyodideKernel } from '../node/kernel';
 
 /**
  * A kernel that executes Python code with Pyodide.
@@ -28,6 +29,12 @@ export abstract class BasePyodideKernel extends BaseKernel implements IKernel {
      */
     constructor(options: PyodideKernel.IOptions) {
         super(options);
+        options.logger.info(`Kernel ctor`);
+        options.logger.info(`Location: ${options.location}`);
+        options.logger.info(`Pyodide Url: ${options.pyodideUrl}`);
+        options.logger.info(`Pyodide Index: ${options.indexUrl}`);
+        options.logger.info(`Packages: ${options.loadPyodideOptions.packages.join(', ')}`);
+
         this.logger = options.logger;
         this._worker = this.initWorker(options);
         this.syncMessaging = new SyncMessaging(this._worker);
