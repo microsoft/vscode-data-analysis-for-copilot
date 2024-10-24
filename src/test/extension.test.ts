@@ -40,7 +40,7 @@ suite('Extension Test Suite', () => {
 			prompt,
 			references: [],
 			model,
-			toolInvocationToken: undefined,
+			toolInvocationToken: undefined as never,
 			toolReferences: [
 				{
 					name: RunPythonTool.Id
