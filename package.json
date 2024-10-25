@@ -211,7 +211,7 @@
         "unzipper": "^0.12.3"
     },
     "dependencies": {
-        "@vscode/prompt-tsx": "^0.3.0-alpha.10",
+        "@vscode/prompt-tsx": "^0.3.0-alpha.12",
         "sanitize-filename": "^1.6.3"
     }
 }
