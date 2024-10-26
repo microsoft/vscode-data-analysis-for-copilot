@@ -22,7 +22,7 @@ export class FindFilesTool implements vscode.LanguageModelTool<IFindFilesParamet
 		options: vscode.LanguageModelToolInvocationOptions<IFindFilesParameters>,
 		token: vscode.CancellationToken
 	) {
-		const params = options.parameters as IFindFilesParameters;
+		const params = options.input as IFindFilesParameters;
 		let files = await vscode.workspace.findFiles(params.pattern, '**/node_modules/**', undefined, token);
 		if (files.length === 0) {
 			files = await vscode.workspace.findFiles(`**/${params.pattern}`, '**/node_modules/**', undefined, token);
@@ -46,7 +46,7 @@ export class FindFilesTool implements vscode.LanguageModelTool<IFindFilesParamet
 		_token: vscode.CancellationToken
 	) {
 		return {
-			invocationMessage: `Searching workspace for "${options.parameters.pattern}"`
+			invocationMessage: `Searching workspace for "${options.input.pattern}"`
 		};
 	}
 }
@@ -87,8 +87,8 @@ export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParamet
 		options: vscode.LanguageModelToolInvocationOptions<IRunPythonParameters>,
 		_token: vscode.CancellationToken
 	) {
-		const code = sanitizePythonCode(options.parameters.code);
-		logger.debug(`Executing Python Code for "${options.parameters.reason}"`);
+		const code = sanitizePythonCode(options.input.code);
+		logger.debug(`Executing Python Code for "${options.input.reason}"`);
 		logger.debug(`Code => `);
 		logger.debug(code);
 
@@ -121,7 +121,7 @@ export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParamet
 		options: vscode.LanguageModelToolInvocationPrepareOptions<IRunPythonParameters>,
 		_token: vscode.CancellationToken
 	) {
-		const reasonMessage = options.parameters.reason ? `: "${options.parameters.reason}"` : '';
+		const reasonMessage = options.input.reason ? `: "${options.input.reason}"` : '';
 		return {
 			invocationMessage: `Executing Code${reasonMessage}`
 		};

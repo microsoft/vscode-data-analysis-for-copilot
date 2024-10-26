@@ -378,7 +378,7 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 	}
 
 	private async _renderOneRound(round: ToolCallRound, sizing: PromptSizing, toolInvocationToken: vscode.ChatParticipantToolToken | undefined): Promise<{ promptPiece: PromptPiece, hasError: boolean, size: number }> {
-		const assistantToolCalls: ToolCall[] = round.toolCalls.map(tc => ({ type: 'function', function: { name: tc.name, arguments: JSON.stringify(tc.parameters) }, id: tc.callId }));
+		const assistantToolCalls: ToolCall[] = round.toolCalls.map(tc => ({ type: 'function', function: { name: tc.name, arguments: JSON.stringify(tc.input) }, id: tc.callId }));
 
 		const toolCallIds = round.toolCalls
 			.map((call) => call.name)
@@ -445,7 +445,7 @@ class ToolCalls extends PromptElement<ToolCallsProps, void> {
 			const toolResult = await vscode.lm.invokeTool(
 				tool.name,
 				{
-					parameters: toolCall.parameters,
+					input: toolCall.input,
 					toolInvocationToken: toolInvocationToken,
 					tokenizationOptions: {
 						tokenBudget: sizing.tokenBudget,

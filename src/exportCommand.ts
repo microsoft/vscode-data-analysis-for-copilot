@@ -5,13 +5,13 @@
 import * as fs from 'fs';
 import { EOL } from 'os';
 import { unescape } from 'querystring';
+import sanitize from 'sanitize-filename';
 import { promisify } from 'util';
 import { CancellationToken, ChatContext, ChatRequest, ChatResponseMarkdownPart, ChatResponseStream, ChatResponseTurn, ExtensionContext, l10n, NotebookCellData, NotebookCellKind, NotebookCellOutput, NotebookData, ThemeIcon, Uri, window, workspace } from "vscode";
 import { getToolResultValue, isErrorMessageResponse, TsxToolUserMetadata } from "./base";
 import { logger } from "./logger";
 import { uint8ArrayToBase64 } from "./platform/common/string";
 import { RunPythonTool } from "./tools";
-import sanitize from 'sanitize-filename';
 
 const JupyterNotebookView = 'jupyter-notebook';
 // enum CellOutputMimeTypes {
@@ -104,7 +104,7 @@ export class JupyterNotebookExporter {
 						return;
 					}
 
-					const parameters = tool.parameters as { code: string; reason: string };
+					const parameters = tool.input as { code: string; reason: string };
 					if (!parameters.code && !parameters.reason) {
 						logger.warn(`Ignoring tool call as code & reason are empty`);
 						return;
