@@ -9,7 +9,7 @@ Data Analysis for Copilot empowers people in data science field. From cleaning u
 
 ![Data Analysis of CSV file with visualizations](https://raw.githubusercontent.com/microsoft/vscode-jupyter/refs/heads/dataanalysis/images/data-analysis-chat.gif)
 
-#### Exporting the code used to perform the data analysis and generate the visualizatios
+#### Exporting the code used to perform the data analysis and generate the visualizations
 
 * Python code used to perform the analysis and generate visualizations can be viewed.
 * Code can be exported in Jupyter Notebooks or a plain Python file
