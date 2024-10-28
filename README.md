@@ -1,10 +1,28 @@
 # Data Analysis for Copilot
 
-This tool extends the LLM's capabilities by allowing it to run Python code for a wide range of computational tasks and data manipulations that it cannot perform directly.
+Data Analysis for Copilot empowers people in data science field. From cleaning up user's .csv file to performing higher level of data analysis by leveraging different statistics measures, graphs, and predictive models, the @data agent helps user make more advanced and informed decisions by offering tailored insights and interactivity for data tasks. The extension contributes a tool where the LLM can ask it to execute Python code via using [Pyodide](https://pyodide.org/en/stable/) and get the result of the relevant Python code execution. It is also able to smartly re-try for better or more appropriate execution results in case of error or failure. You can also export the code used to perform the analysis (or generate visualizations) into a Jupyter Notebook or a Python file.
 
-The Python code is executed locally in [Pyodide](https://pyodide.org/en/stable/).
+#### Data analysis and visualizations
 
-![demo](https://raw.githubusercontent.com/microsoft/vscode-jupyter/refs/heads/dataanalysis/images/demo.gif)
+* Given a csv file enter the prompt such as `Analyze the file #<file name>` or write a more specific prompt (see below recording).
+* Provide follow up prompts requesting the generation of visualizations (charts, plots or the like).
+
+![Data Analysis of CSV file with visualizations](https://raw.githubusercontent.com/microsoft/vscode-jupyter/refs/heads/dataanalysis/images/data-analysis-chat.gif)
+
+#### Exporting the code used to perform the data analysis and generate the visualizations
+
+* Python code used to perform the analysis and generate visualizations can be viewed.
+* Code can be exported in Jupyter Notebooks or a plain Python file
+
+![Exporting the code used to perform the analysis](https://raw.githubusercontent.com/microsoft/vscode-jupyter/refs/heads/dataanalysis/images/data-analysis-export-chat-participant.gif)
+
+#### Editor and explorer integrations for *.csv files
+
+* Right click on a csv file to analyze it.
+* Open a csv file and use the icon to analyze the file.
+
+![Editor and explorer integration to analyze csv files](https://raw.githubusercontent.com/microsoft/vscode-jupyter/refs/heads/dataanalysis/images/images/data-analysis-csv-chat-participant.gif)
+
 
 ## Contributing
 
