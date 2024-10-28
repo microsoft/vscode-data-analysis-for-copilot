@@ -10,3 +10,12 @@ pipelines:
           lastModifiedDate: 2024-10-28
         spotbugs:
           lastModifiedDate: 2024-10-28
+      source:
+        credscan:
+          lastModifiedDate: 2024-10-28
+        eslint:
+          lastModifiedDate: 2024-10-28
+        psscriptanalyzer:
+          lastModifiedDate: 2024-10-28
+        armory:
+          lastModifiedDate: 2024-10-28
