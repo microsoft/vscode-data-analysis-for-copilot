@@ -21,7 +21,7 @@ Data Analysis for Copilot empowers people in data science field. From cleaning u
 * Right click on a csv file to analyze it.
 * Open a csv file and use the icon to analyze the file.
 
-![Editor and explorer integration to analyze csv files](https://raw.githubusercontent.com/microsoft/vscode-jupyter/refs/heads/dataanalysis/images/images/data-analysis-csv-chat-participant.gif)
+![Editor and explorer integration to analyze csv files](https://raw.githubusercontent.com/microsoft/vscode-jupyter/refs/heads/dataanalysis/images/data-analysis-csv.gif)
 
 
 ## Contributing
