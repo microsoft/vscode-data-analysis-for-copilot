@@ -1,0 +1,5 @@
+{
+    "capabilities.untrustedWorkspace.description": "Execution of code for data analysis is not supported in untrusted workspaces.",
+    "commands.dachat.analyzeCsv.title": "Analyze using the Data Analysis Chat Participant",
+    "commands.dachat.analyzeCsv.shortTitle": "Analyze"
+}

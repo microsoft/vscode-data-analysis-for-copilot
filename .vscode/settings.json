@@ -1,0 +1,33 @@
+{
+    "editor.insertSpaces": false,
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "explicit",
+        "source.fixAll.tslint": "explicit"
+    },
+    "files.trimTrailingWhitespace": true,
+    "[typescript]": {
+      "editor.insertSpaces": false,
+      "editor.tabSize": 4,
+      "editor.defaultFormatter": "vscode.typescript-language-features",
+      // "editor.formatOnSave": true,
+      "editor.codeActionsOnSave": {
+        "source.organizeImports": "always"
+      }
+    },
+    "[typescriptreact]": {
+      "editor.insertSpaces": false,
+      "editor.tabSize": 4,
+      "editor.defaultFormatter": "vscode.typescript-language-features",
+    //   "editor.formatOnSave": true,
+      "editor.codeActionsOnSave": {
+        "source.organizeImports": "always"
+      }
+    },
+    "javascript.preferences.quoteStyle": "single",
+    "typescript.preferences.importModuleSpecifier": "relative",
+    "git.branchProtection": [
+        "main",
+        "release*"
+    ],
+    "git.branchProtectionPrompt": "alwaysCommitToNewBranch"
+}
