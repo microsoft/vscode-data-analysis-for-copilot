@@ -4,9 +4,17 @@
     "displayName": "Data Analysis for Copilot",
     "description": "This tool extends the LLM's capabilities by allowing it to run Python code in a sandboxed Python environment (Pyodide) for a wide range of computational tasks and data manipulations that it cannot perform directly.",
     "author": "Microsoft Corporation",
-    "homepage": "https://github.com/microsoft/Advanced-Data-Analysis-for-Copilot",
+    "homepage": "https://github.com/microsoft/vscode-data-analysis-for-copilot",
     "icon": "images/icon.png",
     "version": "0.2.0",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/microsoft/vscode-data-analysis-for-copilot"
+    },
+    "bugs": {
+        "url": "https://github.com/microsoft/vscode-data-analysis-for-copilot/issues"
+    },
     "engines": {
         "vscode": "^1.95.0"
     },

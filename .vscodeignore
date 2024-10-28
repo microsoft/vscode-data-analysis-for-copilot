@@ -23,4 +23,3 @@ pyodide/*.map
 pyodide.zip
 temp/**
 scenarios/**
-LICENSE
