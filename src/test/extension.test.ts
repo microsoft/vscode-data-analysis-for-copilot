@@ -99,7 +99,7 @@ suite('Extension Test Suite', () => {
 		let code = '';
 		if (Array.isArray(toolcall)) {
 			for (const call of toolcall) {
-				code = (call.toolCalls.find(t => t.name === RunPythonTool.Id)!.parameters as any)!.code;
+				code = (call.toolCalls.find(t => t.name === RunPythonTool.Id)!.input as any)!.code;
 				if (code) {
 					const fragments = expectedCode.slice();
 					const found = fragments.filter(fragment => code.toLowerCase().includes(fragment.toLowerCase()));
@@ -110,7 +110,7 @@ suite('Extension Test Suite', () => {
 			}
 			assert.fail(`Code ${expectedCode.join(', ')} not found in toolcall`);
 		} else {
-			code = (toolcall.toolCalls.find(t => t.name === RunPythonTool.Id)!.parameters as any)!.code;
+			code = (toolcall.toolCalls.find(t => t.name === RunPythonTool.Id)!.input as any)!.code;
 			assert.isOk(code);
 			for (const fragment of expectedCode) {
 				assert.include(code.toLowerCase(), fragment.toLowerCase());
