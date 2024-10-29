@@ -1,25 +1,9 @@
-# TODO: The maintainer of this repo has not yet edited this file
+# Data Analysis for Copilot
 
-**REPO OWNER**: Do you want Customer Service & Support (CSS) support for this product/project?
+Data Analysis for Copilot empowers people in data science field. From cleaning up user's .csv file to performing higher level of data analysis by leveraging different statistics measures, graphs, and predictive models, the @data agent helps user make more advanced and informed decisions by offering tailored insights and interactivity for data tasks. The extension contributes a tool where the LLM can ask it to execute Python code via using [Pyodide](https://pyodide.org/en/stable/) and get the result of the relevant Python code execution. It is also able to smartly re-try for better or more appropriate execution results in case of error or failure. You can also export the code used to perform the analysis (or generate visualizations) into a Jupyter Notebook or a Python file.
 
-- **No CSS support:** Fill out this template with information about how to file issues and get help.
-- **Yes CSS support:** Fill out an intake form at [aka.ms/onboardsupport](https://aka.ms/onboardsupport). CSS will work with/help you to determine next steps.
-- **Not sure?** Fill out an intake as though the answer were "Yes". CSS will help you decide.
+#### Data analysis and visualizations
 
-*Then remove this first heading from this SUPPORT.MD file before publishing your repo.*
+* Given a csv file enter the prompt such as `Analyze the file #<file name>` or write a more specific prompt (see below recording).
+* Provide follow up prompts requesting the generation of visualizations (charts, plots or the like).
 
-# Support
-
-## How to file issues and get help  
-
-This project uses GitHub Issues to track bugs and feature requests. Please search the existing 
-issues before filing new issues to avoid duplicates.  For new issues, file your bug or 
-feature request as a new Issue.
-
-For help and questions about using this project, please **REPO MAINTAINER: INSERT INSTRUCTIONS HERE 
-FOR HOW TO ENGAGE REPO OWNERS OR COMMUNITY FOR HELP. COULD BE A STACK OVERFLOW TAG OR OTHER
-CHANNEL. WHERE WILL YOU HELP PEOPLE?**.
-
-## Microsoft Support Policy  
-
-Support for this **PROJECT or PRODUCT** is limited to the resources listed above.
