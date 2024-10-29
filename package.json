@@ -6,7 +6,7 @@
     "author": "Microsoft Corporation",
     "homepage": "https://github.com/microsoft/vscode-data-analysis-for-copilot",
     "icon": "images/icon.png",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "license": "MIT",
     "repository": {
         "type": "git",
@@ -134,7 +134,7 @@
                 "tags": [],
                 "displayName": "Find Files",
                 "modelDescription": "Search for files in the current workspace",
-                "parametersSchema": {
+                "inputSchema": {
                     "type": "object",
                     "properties": {
                         "pattern": {
@@ -152,7 +152,7 @@
                 "tags": [],
                 "displayName": "Run Python",
                 "modelDescription": "Execute Python code locally using Pyodide, providing access to Python's extensive functionality. This tool extends the LLM's capabilities by allowing it to run Python code for a wide range of computational tasks and data manipulations that it cannot perform directly. When you know the workspace folder path and the file path, use the relative path to the file when generating code.",
-                "parametersSchema": {
+                "inputSchema": {
                     "type": "object",
                     "properties": {
                         "code": {
