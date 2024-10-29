@@ -7,21 +7,21 @@ Data Analysis for Copilot empowers people in data science field. From cleaning u
 * Given a csv file enter the prompt such as `Analyze the file #<file name>` or write a more specific prompt (see below recording).
 * Provide follow up prompts requesting the generation of visualizations (charts, plots or the like).
 
-![Data Analysis of CSV file with visualizations](https://raw.githubusercontent.com/microsoft/vscode-jupyter/refs/heads/dataanalysis/images/data-analysis-chat.gif)
+![Data Analysis of CSV file with visualizations](https://raw.githubusercontent.com/microsoft/vscode-data-analysis-for-copilot/refs/heads/main/images/demo-chat.gif)
 
 #### Exporting the code used to perform the data analysis and generate the visualizations
 
 * Python code used to perform the analysis and generate visualizations can be viewed.
 * Code can be exported in Jupyter Notebooks or a plain Python file
 
-![Exporting the code used to perform the analysis](https://raw.githubusercontent.com/microsoft/vscode-jupyter/refs/heads/dataanalysis/images/data-analysis-export-chat-participant.gif)
+![Exporting the code used to perform the analysis](https://raw.githubusercontent.com/microsoft/vscode-data-analysis-for-copilot/refs/heads/main/images/demo-export.gif)
 
 #### Editor and explorer integrations for *.csv files
 
 * Right click on a csv file to analyze it.
 * Open a csv file and use the icon to analyze the file.
 
-![Editor and explorer integration to analyze csv files](https://raw.githubusercontent.com/microsoft/vscode-jupyter/refs/heads/dataanalysis/images/data-analysis-csv.gif)
+![Editor and explorer integration to analyze csv files](https://raw.githubusercontent.com/microsoft/vscode-data-analysis-for-copilot/refs/heads/main/images/demo-csv.gif)
 
 
 ## Contributing
