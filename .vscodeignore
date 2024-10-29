@@ -23,3 +23,5 @@ pyodide/*.map
 pyodide.zip
 temp/**
 scenarios/**
+# Gifs are very large, no need to include in VSIX
+images/*.gif
