@@ -149,7 +149,9 @@
             },
             {
                 "name": "dachat_data_runPython",
-                "tags": [],
+                "tags": [
+                    "Python Execution"
+                ],
                 "displayName": "Run Python",
                 "modelDescription": "Execute Python code locally using Pyodide, providing access to Python's extensive functionality. This tool extends the LLM's capabilities by allowing it to run Python code for a wide range of computational tasks and data manipulations that it cannot perform directly. When you know the workspace folder path and the file path, use the relative path to the file when generating code.",
                 "inputSchema": {
@@ -220,6 +222,7 @@
     },
     "dependencies": {
         "@vscode/prompt-tsx": "^0.3.0-alpha.12",
+        "isbinaryfile": "^5.0.4",
         "sanitize-filename": "^1.6.3"
     }
 }

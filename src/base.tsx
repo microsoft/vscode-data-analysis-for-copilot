@@ -18,6 +18,7 @@ import { Chunk, TextChunk, ToolCall, ToolMessage, ToolResult } from '@vscode/pro
 import * as vscode from "vscode";
 import { logger } from './logger';
 import { RunPythonTool } from './tools';
+import { isBinaryFile } from 'isbinaryfile';
 
 const ImagePrefix = `8a59d504`;
 
@@ -124,6 +125,16 @@ class PromptReferenceElement extends PromptElement<PromptReferenceProps> {
 		const value = this.props.ref.value;
 		// TODO make context a list of TextChunks so that it can be trimmed
 		if (value instanceof vscode.Uri) {
+			// If this is a binary file, then do not include the contents.
+			if (value.scheme === 'file' && await isBinaryFile(value.fsPath)) {
+				return (
+					<Tag name="context">
+						{!this.props.excludeReferences && <references value={[new PromptReference(value)]} />}
+						{value.fsPath}
+					</Tag>
+				);
+
+			}
 			const fileContents = (await vscode.workspace.fs.readFile(value)).toString();
 			const truncatedFileContents =
 				value.fsPath.endsWith('.csv') ? fileContents.substring(0, Math.min(1000, sizing.tokenBudget))
