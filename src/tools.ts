@@ -173,3 +173,42 @@ function sanitizePythonCode(code: string) {
 	}
 	return code;
 }
+
+
+interface IInstallPythonPackage {
+	package: string;
+}
+
+export class InstallPythonPackageTool implements vscode.LanguageModelTool<IInstallPythonPackage> {
+	public static Id = 'dachat_data_installPythonPackage';
+	constructor(readonly pythonTool: RunPythonTool) {
+	}
+
+	async invoke(
+		options: vscode.LanguageModelToolInvocationOptions<IInstallPythonPackage>,
+		token: vscode.CancellationToken
+	) {
+		logger.debug(`Installing Package "${options.input.package}"`);
+		const result = await this.pythonTool.invoke({
+			input: {
+				code: `import ${options.input.package}`,
+				reason: `Installing ${options.input.package}`
+			}, toolInvocationToken: options.toolInvocationToken,
+			tokenizationOptions: options.tokenizationOptions
+		}, token);
+
+		logger.debug(`Result after installing package ${options.input.package} => `);
+		logger.debug(JSON.stringify(result));
+
+		return new vscode.LanguageModelToolResult([new vscode.LanguageModelTextPart('Installation successful')]);
+	}
+
+	async prepareInvocation(
+		options: vscode.LanguageModelToolInvocationPrepareOptions<IInstallPythonPackage>,
+		_token: vscode.CancellationToken
+	) {
+		return {
+			invocationMessage: `Installing ${options.input.package}`
+		};
+	}
+}
