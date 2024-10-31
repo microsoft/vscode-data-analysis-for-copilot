@@ -78,7 +78,7 @@ export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParamet
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				error: (message: string, ...args: any[]) => logger.error(`Pyodide => ${message}`, ...args),
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				info: (message: string, ...args: any[]) => logger.info(`Pyodide => ${message}`, ...args)
+				info: (message: string, ...args: any[]) => logger.debug(`Pyodide => ${message}`, ...args)
 			}
 		});
 	}
@@ -88,19 +88,13 @@ export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParamet
 		_token: vscode.CancellationToken
 	) {
 		const code = sanitizePythonCode(options.input.code);
-		logger.debug(`Executing Python Code for "${options.input.reason}"`);
-		logger.debug(`Code => `);
-		logger.debug(code);
+		logger.info(`Executing Python Code for "${options.input.reason || ''}"`);
+		logger.info(`Code => `, code);
 
 		this.pendingRequests = this.pendingRequests.finally().then(() => this._kernel.execute(code));
 		const result = await this.pendingRequests as Awaited<ReturnType<typeof Kernel.prototype.execute>>;
 
-		logger.debug(`Result => `);
-		Object.keys(result || {}).forEach(key => {
-			logger.debug(`${key} :`);
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			logger.debug((result as any)[key]);
-		});
+		logger.debug(`Result => `, JSON.stringify(result));
 
 		const content: (vscode.LanguageModelPromptTsxPart | vscode.LanguageModelTextPart)[] = []
 		if (result && result['text/plain']) {
@@ -112,7 +106,9 @@ export class RunPythonTool implements vscode.LanguageModelTool<IRunPythonParamet
 		}
 
 		if (result && result['application/vnd.code.notebook.error']) {
-			throw result['application/vnd.code.notebook.error'] as Error;
+			const error = result['application/vnd.code.notebook.error'] as Error;
+			logger.error(`Toolcall failed, Error ${error.name}, ${error.message}`);
+			throw error;
 		}
 		return new vscode.LanguageModelToolResult(content);
 	}
@@ -188,7 +184,7 @@ export class InstallPythonPackageTool implements vscode.LanguageModelTool<IInsta
 		options: vscode.LanguageModelToolInvocationOptions<IInstallPythonPackage>,
 		token: vscode.CancellationToken
 	) {
-		logger.debug(`Installing Package "${options.input.package}"`);
+		logger.info(`Installing Package "${options.input.package}"`);
 		const result = await this.pythonTool.invoke({
 			input: {
 				code: `import ${options.input.package}`,
@@ -197,8 +193,7 @@ export class InstallPythonPackageTool implements vscode.LanguageModelTool<IInsta
 			tokenizationOptions: options.tokenizationOptions
 		}, token);
 
-		logger.debug(`Result after installing package ${options.input.package} => `);
-		logger.debug(JSON.stringify(result));
+		logger.debug(`Result after installing package ${options.input.package} => `, JSON.stringify(result));
 
 		return new vscode.LanguageModelToolResult([new vscode.LanguageModelTextPart('Installation successful')]);
 	}

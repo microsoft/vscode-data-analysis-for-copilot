@@ -5,6 +5,7 @@
 import * as vscode from 'vscode';
 import { registerCsvCommand } from './csvCommand';
 import { DataAgent } from './dataAgent';
+import { registerIssueReporter } from './issueReporter';
 import { initializeLogger } from './logger';
 import { FindFilesTool, InstallPythonPackageTool, RunPythonTool } from './tools';
 
@@ -14,6 +15,7 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(logger);
 	context.subscriptions.push(dataAgent);
 	context.subscriptions.push(registerCsvCommand());
+	context.subscriptions.push(registerIssueReporter(context));
 	context.subscriptions.push(vscode.lm.registerTool(FindFilesTool.Id, new FindFilesTool(context)));
 	const pythonTool = new RunPythonTool(context);
 	context.subscriptions.push(vscode.lm.registerTool(RunPythonTool.Id, pythonTool));

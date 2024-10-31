@@ -56,6 +56,11 @@
                 "icon": "$(copilot)",
                 "title": "%commands.dachat.analyzeCsv.title%",
                 "shortTitle": "%commands.dachat.analyzeCsv.shortTitle%"
+            },
+            {
+                "category": "Data Analysis",
+                "command": "dachat.reportIssue",
+                "title": "Report Issue..."
             }
         ],
         "menus": {
@@ -63,6 +68,10 @@
                 {
                     "command": "dachat.analyzeCsv",
                     "when": "false"
+                },
+                {
+                    "command": "dachat.reportIssue",
+                    "when": "true"
                 }
             ],
             "editor/title": [
