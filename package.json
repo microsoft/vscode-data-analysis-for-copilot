@@ -240,6 +240,7 @@
     },
     "dependencies": {
         "@vscode/prompt-tsx": "^0.3.0-alpha.12",
+        "isbinaryfile": "^5.0.4",
         "sanitize-filename": "^1.6.3"
     }
 }
