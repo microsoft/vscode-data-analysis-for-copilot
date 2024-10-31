@@ -6,7 +6,7 @@
     "author": "Microsoft Corporation",
     "homepage": "https://github.com/microsoft/vscode-data-analysis-for-copilot",
     "icon": "images/icon.png",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "license": "MIT",
     "repository": {
         "type": "git",
