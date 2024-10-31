@@ -170,6 +170,24 @@
                         "code"
                     ]
                 }
+            },
+            {
+                "name": "dachat_data_installPythonPackage",
+                "tags": [],
+                "displayName": "Install Missing Python Packages",
+                "modelDescription": "Install missing Python packages in the tool used to run Python code using Pyodide.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "package": {
+                            "type": "string",
+                            "description": "Name of the Python package that could not be found and needs to be installed"
+                        }
+                    },
+                    "required": [
+                        "code"
+                    ]
+                }
             }
         ]
     },
