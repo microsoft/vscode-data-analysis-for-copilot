@@ -1,30 +1,18 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { spawnSync } from 'child_process';
-import { Presets, SingleBar } from 'cli-progress';
-import { https } from 'follow-redirects';
 import * as fs from 'fs';
-import { HttpsProxyAgent } from 'https-proxy-agent';
-import * as path from 'path';
-import { getProxyForUrl } from 'proxy-from-env';
-import * as tar from 'tar';
-import * as unzipper from 'unzipper';
-import { parse } from 'url';
-import { PYODIDE_KERNEL_VERSION, PYODIDE_VERSION } from './common';
 import { tmpdir } from 'os';
+import * as path from 'path';
+import { downloadContents, downloadFile, extractFile, extractTarBz2, PYODIDE_KERNEL_VERSION, PYODIDE_VERSION } from './common';
 import { generateLicenses } from './licenses';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const decompress = require('decompress');
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const decompressTarbz = require('decompress-tarbz2');
 
-const pyodideScriptsUrl = `https://api.github.com/repos/microsoft/Advanced-Data-Analysis-for-Copilot/releases/tags/${PYODIDE_VERSION}`;
 const pydodideKernelApiUrl = `https://api.github.com/repos/jupyterlite/pyodide-kernel/releases/tags/v${PYODIDE_KERNEL_VERSION}`;
 
-const pyodideApiUri = 'https://api.github.com/repos/pyodide/pyodide/releases/tags/0.26.2';
+const pyodideApiUri = `https://api.github.com/repos/pyodide/pyodide/releases/tags/${PYODIDE_VERSION}`;
 const packagesToKeep = ['attrs-', 'decorator', 'distutils', 'fonttools', 'hashlib',
 	'matplotlib', 'micropip', 'numpy', 'mpmpath', 'openssl', 'package.json', 'pandas',
 	'pydecimal', 'pyodide', 'python_date', 'python_std', 'pytz', 'six', 'sqlite', 'ssl',
@@ -64,10 +52,13 @@ export async function downloadPyodideKernel() {
 	const contents = await downloadContents(pydodideKernelApiUrl);
 	const json: ReleaseInfo = JSON.parse(contents);
 	const fileToDownload = json.assets.find((asset) =>
-		asset.name.toLowerCase().startsWith('jupyterlite-pyodide-kernel-0')
+		asset.name.toLowerCase() === `jupyterlite-pyodide-kernel-${PYODIDE_KERNEL_VERSION}.tgz`
 	)!;
 	console.debug(`Download ${fileToDownload.name} (${fileToDownload.url})`);
 	const tarFile = path.join(tmpdir(), fileToDownload.name);
+	if (fs.existsSync(tarFile)) {
+		fs.rmSync(tarFile);
+	}
 	await downloadFile(fileToDownload.url, tarFile);
 	console.debug(`Downloaded to ${tarFile}`);
 	const dir = path.join(__dirname, '..', 'pyodide');
@@ -124,7 +115,7 @@ export async function downloadPyodideArtifacts() {
 	const contents = await downloadContents(pyodideApiUri);
 	const json: ReleaseInfo = JSON.parse(contents);
 	const fileToDownload = json.assets.find((asset) =>
-		asset.name.toLowerCase().startsWith('pyodide-0') && asset.name.toLowerCase().endsWith('.tar.bz2')
+		asset.name.toLowerCase() === `pyodide-${PYODIDE_VERSION}.tar.bz2`
 	)!;
 	console.debug(`Downloading ${fileToDownload.name} (${fileToDownload.url})`);
 	const tarFile = path.join(__dirname, '..', 'temp', fileToDownload.name);
@@ -137,14 +128,7 @@ export async function downloadPyodideArtifacts() {
 	console.debug(`Extracting into ${dir}`);
 	// Extraction is slow, use the previously extracted files if they exist.
 	if (!fs.existsSync(path.join(dir, 'pyodide')) || !fs.readdirSync(path.join(dir, 'pyodide')).length) {
-		if (!fs.existsSync(dir)) {
-			fs.mkdirSync(dir);
-		}
-		await decompress(tarFile, dir, {
-			plugins: [
-				decompressTarbz()
-			]
-		});
+		await extractTarBz2(tarFile, dir);
 	}
 
 	// Extract only the files we need.
@@ -170,100 +154,6 @@ export async function downloadPyodideArtifacts() {
 		}
 	});
 	console.debug(`Extracted to ${dir}`);
-}
-
-function getRequest(url: string) {
-	const token = process.env['GITHUB_TOKEN'];
-	const proxy = getProxyForUrl(pyodideScriptsUrl);
-	const downloadOpts: Record<string, any> = {
-		headers: {
-			'user-agent': 'vscode-zeromq'
-		},
-		...parse(url)
-	};
-
-	if (token) {
-		downloadOpts.headers.authorization = `token ${token}`;
-	}
-
-	if (proxy !== '') {
-		Object.assign(downloadOpts, {
-			...downloadOpts,
-			agent: new HttpsProxyAgent(proxy)
-		});
-	}
-
-	return downloadOpts;
-}
-
-function downloadContents(url: string) {
-	return new Promise<string>((resolve, reject) => {
-		let result = '';
-		https.get(getRequest(url), (response) => {
-			if (response.statusCode !== 200) {
-				return reject(new Error(`Failed to get '${url}' (${response.statusCode})`));
-			}
-			response.on('data', (d) => (result += d.toString()));
-			response.on('end', () => resolve(result));
-		});
-	});
-}
-
-function downloadFile(url: string, dest: string) {
-	if (fs.existsSync(dest)) {
-		// Re-use the same file.
-		return;
-	}
-	if (!fs.existsSync(path.dirname(dest))) {
-		fs.mkdirSync(path.dirname(dest), { recursive: true });
-	}
-	const downloadOpts = getRequest(url);
-	downloadOpts.headers.accept = 'application/octet-stream';
-	return new Promise<void>((resolve, reject) => {
-		const file = fs.createWriteStream(dest);
-		https
-			.get(downloadOpts, (response) => {
-				if (response.statusCode !== 200) {
-					return reject(new Error(`Failed to get '${url}' (${response.statusCode})`));
-				}
-
-				const totalBytes = parseInt(response.headers['content-length'] || '0');
-				const bar = new SingleBar({}, Presets.shades_classic);
-				bar.start(100, 0);
-				let receivedBytes = 0;
-				response.on('data', function (chunk) {
-					receivedBytes += chunk.length;
-					const percentage = (receivedBytes * 100) / totalBytes;
-					bar.update(percentage);
-				});
-				response.pipe(file);
-
-				file.on('finish', () => {
-					bar.stop();
-					file.close(() => resolve());
-				});
-			})
-			.on('error', (err) => reject(err));
-	});
-}
-
-
-async function extractFile(tgzFile: string, extractDir: string) {
-	if (tgzFile.endsWith('.zip')) {
-		const directory = await unzipper.Open.file(tgzFile);
-		await directory.extract({ path: extractDir })
-		if (fs.existsSync(path.join(extractDir, '__MACOSX'))) {
-			fs.rmSync(path.join(extractDir, '__MACOSX'), { recursive: true });
-		}
-		return;
-	}
-	await tar.x({
-		file: tgzFile,
-		cwd: extractDir,
-		'strip-components': 1
-	});
-
-	return extractDir;
 }
 
 async function main() {

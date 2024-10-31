@@ -7,6 +7,7 @@ import * as fs from 'fs';
 import { tmpdir } from 'os';
 import * as path from 'path';
 import * as unzipper from 'unzipper';
+import { downloadContents, downloadFile, extractTarBz2, PYTHON_VERSION_SHORT } from './common';
 
 const filesToIgnore: string[] = [
 	// These are built by us, and licence covered by pyodide license
@@ -31,15 +32,7 @@ const filesToIgnore: string[] = [
 	// pyodide license
 	path.join('PYODIDE_LICENSE'),
 	path.join('LICENSE'),
-	// These are compiled by pyodide.
-	path.join('hashlib-1.0.0.zip'),
-	path.join('lzma-1.0.0.zip'),
-	path.join('openssl-1.1.1n.zip'),
-	path.join('pydecimal-1.0.0.zip'),
-	path.join('pydoc_data-1.0.0.zip'),
 	path.join('python_stdlib.zip'),
-	path.join('sqlite3-1.0.0.zip'),
-	path.join('ssl-1.0.0.zip'),
 ];
 
 type LicenseInfo = {
@@ -107,7 +100,7 @@ async function getLicenseFiles() {
 }
 
 async function generateLicense(file: string) {
-	if (file.endsWith('.whl')) {
+	if (file.endsWith('.whl') || file.endsWith('.zip')) {
 		return generateWheelLicense(file);
 	} else if (file.endsWith('.whl.metadata')) {
 		// Ignore metadata files.
@@ -125,42 +118,65 @@ async function generateWheelLicense(file: string): Promise<LicenseInfo> {
 	}
 	const directory = await unzipper.Open.file(file);
 	await directory.extract({ path: extractDir })
-	// console.error(`Extracting ${file} to ${extractDir}`);
 
-	const files = fs.readdirSync(extractDir, { recursive: true }).map(f => path.join(extractDir, f));
-	const licenseFiles = files.filter(f => path.basename(f).startsWith('LICENSE') && fs.statSync(f).isFile());
-	const metadata = files.filter(f => path.basename(f).startsWith('METADATA') && fs.statSync(f).isFile());
-	if (licenseFiles.length === 0) {
-		throw new Error(`No license file found in ${extractDir}`);
-	}
-	if (metadata.length === 0) {
-		throw new Error(`No metadata file found in ${extractDir}`);
-	}
-	const metadataContents = fs.readFileSync(metadata[0], 'utf-8');
-	const info = {
-		author: { name: '', email: '' },
-		file: file,
-		licenses: licenseFiles.map(f => ({ file: f, contents: fs.readFileSync(f, 'utf-8') })),
+	const info: LicenseInfo = {
+		file,
+		licenses: [],
 		name: '',
 		projectUrl: '',
 		version: ''
 	};
-	if (info.licenses.some(l => l.contents.indexOf('GPL') >= 0)) {
+
+	const files = fs.readdirSync(extractDir, { recursive: true }).map(f => path.join(extractDir, f));
+	const fileName = path.basename(file);
+	if (PackageInformation[fileName]) {
+		info.name = PackageInformation[fileName].name;
+		info.version = PackageInformation[fileName].version;
+		info.projectUrl = PackageInformation[fileName].projectUrl;
+		const file = PackageInformation[fileName].licenses[0].file;
+		if (file.endsWith('.tar.gz')) {
+			info.licenses.push({
+				file,
+				contents: await getLicenseFromTar(file)
+			});
+		} else {
+			info.licenses.push({
+				file,
+				contents: await downloadContents(file)
+			});
+		}
+	}
+	else {
+		const licenseFiles = files.filter(f => path.basename(f).startsWith('LICENSE') && fs.statSync(f).isFile());
+		info.licenses.push(...licenseFiles.map(f => ({ file: f, contents: fs.readFileSync(f, 'utf-8') })));
+	}
+	if (info.licenses.length === 0) {
+		throw new Error(`No license file found in ${extractDir}`);
+	}
+	if (info.licenses.some(l => l.contents.indexOf('GPL') >= 0 && l.file !== PSFLicense)) {
 		throw new Error(`GPL license found in ${file}`);
 	}
 
-	for (const line of metadataContents.split('\n')) {
-		if (line.startsWith('Name:')) {
-			info.name = line.split('Name:')[1].trim();
+	if (!info.version || !info.name || !info.projectUrl) {
+		const metadata = files.filter(f => path.basename(f).startsWith('METADATA') && fs.statSync(f).isFile());
+		if (metadata.length === 0) {
+			throw new Error(`No metadata file found in ${extractDir}`);
 		}
-		if (line.startsWith('Version:')) {
-			info.version = line.split('Version:')[1].trim();
-		}
-		if (line.startsWith('Home-page:')) {
-			info.projectUrl = info.projectUrl || line.split('Home-page:')[1].trim();
-		}
-		if (line.startsWith('Project-URL:')) {
-			info.projectUrl = info.projectUrl || line.split('Project-URL:')[1].trim();
+		const metadataContents = fs.readFileSync(metadata[0], 'utf-8');
+
+		for (const line of metadataContents.split('\n')) {
+			if (line.startsWith('Name:')) {
+				info.name = line.split('Name:')[1].trim();
+			}
+			if (line.startsWith('Version:')) {
+				info.version = line.split('Version:')[1].trim();
+			}
+			if (line.startsWith('Home-page:')) {
+				info.projectUrl = info.projectUrl || line.split('Home-page:')[1].trim();
+			}
+			if (line.startsWith('Project-URL:')) {
+				info.projectUrl = info.projectUrl || line.split('Project-URL:')[1].trim();
+			}
 		}
 	}
 	if (info.projectUrl) {
@@ -168,3 +184,98 @@ async function generateWheelLicense(file: string): Promise<LicenseInfo> {
 	}
 	return info;
 }
+
+async function getLicenseFromTar(tarUrl: string): Promise<string> {
+	const filename = tarUrl.split('/').reverse()[0];
+	const tarFile = path.join(__dirname, '..', 'temp', filename);
+	if (!fs.existsSync(tarFile)) {
+		console.debug(`Downloading ${filename} (${tarUrl})`);
+		await downloadFile(tarUrl, tarFile);
+		console.debug(`Downloaded to ${tarFile}`);
+	}
+	const dir = path.join(__dirname, '..', 'temp');
+	const targetDir = path.join(dir, filename.replace('.tar.gz', '').replace('.tar', ''));
+	if (fs.existsSync(targetDir)) {
+		fs.mkdirSync(targetDir, { recursive: true });
+	}
+	console.debug(`Extracting into ${dir}`);
+	await extractTarBz2(tarFile, dir);
+	return fs.readFileSync(path.join(targetDir, 'LICENSE')).toString();
+}
+
+const PSFLicense = `https://raw.githubusercontent.com/python/cpython/refs/heads/${PYTHON_VERSION_SHORT}/LICENSE`;
+const PackageInformation: Record<string, LicenseInfo> = {
+	// Defined here https://github.com/pyodide/pyodide/blob/main/packages/pyodide-unix-timezones/meta.yaml
+	'pyodide_unix_timezones-1.0.0-py3-none-any.whl': {
+		file: '',
+		name: '',
+		version: '',
+		licenses: [{ file: 'https://raw.githubusercontent.com/joemarshall/pyodide-unix-timezones/refs/heads/main/LICENSE', contents: '' }],
+		projectUrl: 'https://github.com/joemarshall/pyodide-unix-timezones/tree/main'
+	},
+	// https://github.com/pyodide/pyodide/blob/main/packages/ssl/meta.yaml
+	// PSF license is in Python distro, get from there.
+	// See here for how it is built https://github.com/pyodide/pyodide/blob/main/packages/ssl/meta.yaml
+	// You can see that python-3.12.1.tgz is extracted and _hashopenssl.c is compiled.
+	// And the license is at the bottom of the above meta.yaml file.
+	// The license is included in the same python-3.12.1.tgz file.
+	// TODO: Download https://www.python.org/ftp/python/$(PYSTABLEVERSION)/Python-$(PYVERSION).tgz
+	// Where PYSTABLEVERSION = 3.12.1
+	// Where PYVERSION = 3.12.1
+	// The above values are defined in https://github.com/pyodide/pyodide/blob/main/Makefile.envs
+	// Extract the LICENSE file from the above tgz and include that.
+	// Or get it from github.
+	'ssl-1.0.0-py2.py3-none-any.whl': {
+		file: '',
+		licenses: [{ file: PSFLicense, contents: '' }],
+		projectUrl: 'https://github.com/pyodide/pyodide/tree/0.27.0a2',
+		name: '',
+		version: ''
+	},
+	// Same as SSL license
+	'hashlib-1.0.0-py2.py3-none-any.whl': {
+		file: '',
+		name: '',
+		version: '',
+		licenses: [{ file: PSFLicense, contents: '' }],
+		projectUrl: 'https://github.com/pyodide/pyodide/tree/0.27.0a2'
+	},
+	// Same as SSL license
+	'pydoc_data-1.0.0-py2.py3-none-any.whl': {
+		file: '',
+		name: '',
+		version: '',
+		licenses: [{ file: PSFLicense, contents: '' }],
+		projectUrl: 'https://github.com/pyodide/pyodide/tree/0.27.0a2'
+	},
+	// Same as SSL license
+	'sqlite3-1.0.0-py2.py3-none-any.whl': {
+		file: '',
+		name: '',
+		version: '',
+		licenses: [{ file: PSFLicense, contents: '' }],
+		projectUrl: 'https://github.com/pyodide/pyodide/tree/0.27.0a2'
+	},
+	'pydecimal-1.0.0-py2.py3-none-any.whl': {
+		file: '',
+		name: '',
+		version: '',
+		licenses: [{ file: PSFLicense, contents: '' }],
+		projectUrl: 'https://github.com/pyodide/pyodide/tree/0.27.0a2'
+	},
+	// Same as SSL license
+	'lzma-1.0.0-py2.py3-none-any.whl': {
+		file: '',
+		name: '',
+		version: '',
+		licenses: [{ file: PSFLicense, contents: '' }],
+		projectUrl: 'https://github.com/pyodide/pyodide/tree/0.27.0a2'
+	},
+	'openssl-1.1.1w.zip': {
+		file: '',
+		name: 'openssl', // There is no metadata file, hence we must define this, found here https://github.com/openssl/openssl/releases/tag/OpenSSL_1_1_1v.
+		version: '1.1.1w', // There is no metadata file, hence we must define this, found here https://github.com/openssl/openssl/releases/tag/OpenSSL_1_1_1v.
+		licenses: [{ file: 'https://www.openssl.org/source/openssl-1.1.1w.tar.gz', contents: '' }],
+		projectUrl: 'https://www.openssl.org'
+	}
+};
