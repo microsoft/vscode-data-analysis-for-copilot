@@ -96,7 +96,7 @@ export class DataAgent implements vscode.Disposable {
 				options.tools = allTools;
 			}
 
-			logger.debug('Sending request', JSON.stringify(messages, undefined, 4));
+			logger.debug('Sending request', JSON.stringify(messages));
 			const toolCalls: vscode.LanguageModelToolCallPart[] = [];
 
 			stream.progress('Analyzing');
