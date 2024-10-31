@@ -69,10 +69,11 @@ export class DataAgent implements vscode.Disposable {
 
 		const chat = models[0];
 
-		const allTools = vscode.lm.tools.map((tool): vscode.LanguageModelChatTool => {
+		const allTools: vscode.LanguageModelChatTool[] = vscode.lm.tools.map((tool) => {
 			return {
 				name: tool.name,
-				description: tool.description
+				description: tool.description,
+				inputSchema: tool.inputSchema,
 			};
 		});
 
