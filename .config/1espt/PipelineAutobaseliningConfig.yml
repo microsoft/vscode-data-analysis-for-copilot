@@ -31,11 +31,13 @@ pipelines:
           lastModifiedDate: 2024-10-31
         armory:
           lastModifiedDate: 2024-10-31
+        policheck:
+          lastModifiedDate: 2025-02-12
       binary:
         credscan:
           lastModifiedDate: 2024-10-31
         binskim:
-          lastModifiedDate: 2024-10-31
+          lastModifiedDate: 2025-02-12
         spotbugs:
           lastModifiedDate: 2024-10-31
   607:
