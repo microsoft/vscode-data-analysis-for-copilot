@@ -235,7 +235,7 @@
         "cli-progress": "^3.12.0",
         "decompress": "^4.2.1",
         "decompress-tarbz2": "^4.1.1",
-        "esbuild": "^0.21.5",
+        "esbuild": "^0.25.0",
         "eslint": "^9.12.0",
         "follow-redirects": "^1.15.9",
         "globals": "^15.10.0",
