@@ -241,7 +241,7 @@
         "globals": "^15.10.0",
         "https-proxy-agent": "^7.0.5",
         "proxy-from-env": "^1.1.0",
-        "tar": "^7.4.3",
+        "tar": "^7.5.3",
         "tsx": "^4.19.1",
         "typescript": "^5.6.3",
         "typescript-eslint": "^8.8.1",
