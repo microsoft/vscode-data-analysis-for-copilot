@@ -21,7 +21,6 @@ resources:
 extends:
   template: azure-pipelines/extension/stable.yml@templates
   parameters:
-    customNPMRegistry: ''
     l10nSourcePaths: ./src
     buildSteps:
       - script: npm ci
