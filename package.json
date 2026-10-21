@@ -237,7 +237,7 @@
         "decompress-tarbz2": "^4.1.1",
         "esbuild": "^0.28.1",
         "eslint": "^9.39.4",
-        "follow-redirects": "^1.16.0",
+        "follow-redirects": "^1.16.1",
         "globals": "^15.10.0",
         "https-proxy-agent": "^7.0.5",
         "proxy-from-env": "^1.1.0",
