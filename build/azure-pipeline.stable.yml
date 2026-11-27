@@ -24,6 +24,7 @@ extends:
     publishExtension: ${{ parameters.publishExtension }}
     l10nSourcePaths: ./src
     buildSteps:
+      - template: /build/pyodide-wheels.yml@self
       - script: npm ci
         displayName: npm ci
 

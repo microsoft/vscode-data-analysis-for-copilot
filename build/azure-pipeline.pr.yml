@@ -22,9 +22,9 @@ extends:
   template: azure-pipelines/extension/stable.yml@templates
   parameters:
     skipAPIScan: ${{ eq(variables['Build.Reason'], 'PullRequest') }}
-    customNPMRegistry: ''
     l10nSourcePaths: ./src
     buildSteps:
+      - template: /build/pyodide-wheels.yml@self
       - script: npm ci
         displayName: npm ci
 

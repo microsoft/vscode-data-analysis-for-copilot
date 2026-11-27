@@ -38,3 +38,8 @@ TypeScript errors and warnings will be displayed in the `Problems` window of Vis
 #### Building Pyodide Scripts
 
 See details in the `README.md` of the `pyodide` branch.
+
+Local builds download the `comm` and `seaborn` wheels directly. Azure Pipelines
+instead stages the wheels from the authenticated `Monaco/vscode` feed and sets
+`PYODIDE_WHEEL_DIR` for install and packaging. When updating a wheel, keep its
+filename and the pin and SHA-256 in [pyodide-wheels.txt](build/pyodide-wheels.txt) in sync.

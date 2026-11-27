@@ -29,11 +29,11 @@ parameters:
 extends:
   template: azure-pipelines/extension/pre-release.yml@templates
   parameters:
-    customNPMRegistry: ''
     ghCreateTag: false
     standardizedVersioning: true
     l10nSourcePaths: ./src
     buildSteps:
+      - template: /build/pyodide-wheels.yml@self
       - script: npm ci
         displayName: npm ci
 
