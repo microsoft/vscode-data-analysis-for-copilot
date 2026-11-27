@@ -21,7 +21,7 @@ resources:
 extends:
   template: azure-pipelines/extension/stable.yml@templates
   parameters:
-    skipAPIScan: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.Repository.Provider'], 'GitHub')) }}
+    skipAPIScan: ${{ eq(variables['Build.Reason'], 'PullRequest') }}
     customNPMRegistry: ''
     l10nSourcePaths: ./src
     buildSteps:
