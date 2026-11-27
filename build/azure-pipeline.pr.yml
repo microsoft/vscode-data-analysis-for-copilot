@@ -21,6 +21,7 @@ resources:
 extends:
   template: azure-pipelines/extension/stable.yml@templates
   parameters:
+    skipAPIScan: true
     customNPMRegistry: ''
     l10nSourcePaths: ./src
     buildSteps:
