@@ -7,7 +7,7 @@ import * as fs from 'fs';
 import { tmpdir } from 'os';
 import * as path from 'path';
 import * as unzipper from 'unzipper';
-import { downloadContents, downloadFile, extractTarBz2, PYTHON_VERSION_SHORT } from './common';
+import { downloadContents, PYTHON_VERSION_SHORT } from './common';
 
 const filesToIgnore: string[] = [
 	// These are built by us, and licence covered by pyodide license
@@ -134,17 +134,7 @@ async function generateWheelLicense(file: string): Promise<LicenseInfo> {
 		info.version = PackageInformation[fileName].version;
 		info.projectUrl = PackageInformation[fileName].projectUrl;
 		const file = PackageInformation[fileName].licenses[0].file;
-		if (file.endsWith('.tar.gz')) {
-			info.licenses.push({
-				file,
-				contents: await getLicenseFromTar(file)
-			});
-		} else {
-			info.licenses.push({
-				file,
-				contents: await downloadContents(file)
-			});
-		}
+		info.licenses.push({ file, contents: await downloadContents(file) });
 	}
 	else {
 		const licenseFiles = files.filter(f => path.basename(f).startsWith('LICENSE') && fs.statSync(f).isFile());
@@ -183,24 +173,6 @@ async function generateWheelLicense(file: string): Promise<LicenseInfo> {
 		info.projectUrl = info.projectUrl.substring(info.projectUrl.indexOf('http'));
 	}
 	return info;
-}
-
-async function getLicenseFromTar(tarUrl: string): Promise<string> {
-	const filename = tarUrl.split('/').reverse()[0];
-	const tarFile = path.join(__dirname, '..', 'temp', filename);
-	if (!fs.existsSync(tarFile)) {
-		console.debug(`Downloading ${filename} (${tarUrl})`);
-		await downloadFile(tarUrl, tarFile);
-		console.debug(`Downloaded to ${tarFile}`);
-	}
-	const dir = path.join(__dirname, '..', 'temp');
-	const targetDir = path.join(dir, filename.replace('.tar.gz', '').replace('.tar', ''));
-	if (fs.existsSync(targetDir)) {
-		fs.mkdirSync(targetDir, { recursive: true });
-	}
-	console.debug(`Extracting into ${dir}`);
-	await extractTarBz2(tarFile, dir);
-	return fs.readFileSync(path.join(targetDir, 'LICENSE')).toString();
 }
 
 const PSFLicense = `https://raw.githubusercontent.com/python/cpython/refs/heads/${PYTHON_VERSION_SHORT}/LICENSE`;
@@ -273,9 +245,10 @@ const PackageInformation: Record<string, LicenseInfo> = {
 	},
 	'openssl-1.1.1w.zip': {
 		file: '',
-		name: 'openssl', // There is no metadata file, hence we must define this, found here https://github.com/openssl/openssl/releases/tag/OpenSSL_1_1_1v.
-		version: '1.1.1w', // There is no metadata file, hence we must define this, found here https://github.com/openssl/openssl/releases/tag/OpenSSL_1_1_1v.
-		licenses: [{ file: 'https://www.openssl.org/source/openssl-1.1.1w.tar.gz', contents: '' }],
+		name: 'openssl',
+		version: '1.1.1w',
+		// LICENSE from the OpenSSL_1_1_1w release commit.
+		licenses: [{ file: 'https://raw.githubusercontent.com/openssl/openssl/e04bd3433fd84e1861bf258ea37928d9845e6a86/LICENSE', contents: '' }],
 		projectUrl: 'https://www.openssl.org'
 	}
 };

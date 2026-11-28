@@ -90,24 +90,14 @@ async function deleteUnwantedFilesFromPyodideKernel(dir: string) {
 }
 
 
-export async function downloadCommWheel() {
-	const url = 'https://files.pythonhosted.org/packages/e6/75/49e5bfe642f71f272236b5b2d2691cf915a7283cc0ceda56357b61daa538/comm-0.2.2-py3-none-any.whl';
-	const dest = path.join(__dirname, '..', 'pyodide', 'comm-0.2.2-py3-none-any.whl');
-	if (fs.existsSync(dest)) {
-		// Re-use the same file.
-		return;
+async function stageWheel(url: string) {
+	const filename = path.basename(url);
+	const dest = path.join(__dirname, '..', 'pyodide', filename);
+	if (process.env.PYODIDE_WHEEL_DIR) {
+		await fs.promises.copyFile(path.join(process.env.PYODIDE_WHEEL_DIR, filename), dest);
+	} else if (!fs.existsSync(dest)) {
+		await downloadFile(url, dest);
 	}
-	await downloadFile(url, dest);
-}
-
-export async function downloadSeabornWheels() {
-	const url = 'https://files.pythonhosted.org/packages/83/11/00d3c3dfc25ad54e731d91449895a79e4bf2384dc3ac01809010ba88f6d5/seaborn-0.13.2-py3-none-any.whl';
-	const dest = path.join(__dirname, '..', 'pyodide', 'seaborn-0.13.2-py3-none-any.whl');
-	if (fs.existsSync(dest)) {
-		// Re-use the same file.
-		return;
-	}
-	await downloadFile(url, dest);
 }
 
 
@@ -162,8 +152,8 @@ async function main() {
 		fs.rmSync(pyodideDir, { recursive: true });
 	}
 	await downloadPyodideKernel();
-	await downloadCommWheel();
-	await downloadSeabornWheels();
+	await stageWheel('https://files.pythonhosted.org/packages/e6/75/49e5bfe642f71f272236b5b2d2691cf915a7283cc0ceda56357b61daa538/comm-0.2.2-py3-none-any.whl');
+	await stageWheel('https://files.pythonhosted.org/packages/83/11/00d3c3dfc25ad54e731d91449895a79e4bf2384dc3ac01809010ba88f6d5/seaborn-0.13.2-py3-none-any.whl');
 	await downloadPyodideScripts();
 	await downloadPyodideArtifacts();
 	await generateLicenses();

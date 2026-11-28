@@ -1,0 +1,19 @@
+steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.12'
+
+  - task: PipAuthenticate@1
+    inputs:
+      artifactFeeds: Monaco/vscode
+
+  - script: >-
+      python -m pip download --only-binary=:all: --no-deps --require-hashes
+      -r build/pyodide-wheels.txt --dest "$(Agent.TempDirectory)/pyodide-wheels"
+    displayName: Download pinned Pyodide wheels
+
+  - pwsh: |
+      Write-Host "##vso[task.setvariable variable=PIP_INDEX_URL]"
+      Write-Host "##vso[task.setvariable variable=PYODIDE_WHEEL_DIR]$(Agent.TempDirectory)/pyodide-wheels"
+    displayName: Clear feed credentials and expose staged wheels to packaging
+    condition: always()
