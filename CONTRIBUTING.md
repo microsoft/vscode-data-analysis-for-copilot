@@ -37,9 +37,14 @@ TypeScript errors and warnings will be displayed in the `Problems` window of Vis
 
 #### Building Pyodide Scripts
 
-See details in the `README.md` of the `pyodide` branch.
-
 Local builds download the `comm` and `seaborn` wheels directly. Azure Pipelines
 instead stages the wheels from the authenticated `Monaco/vscode` feed and sets
-`PYODIDE_WHEEL_DIR` for install and packaging. When updating a wheel, keep its
-filename and the pin and SHA-256 in [pyodide-wheels.txt](build/pyodide-wheels.txt) in sync.
+`PYODIDE_WHEEL_DIR` for install and packaging. When updating either wheel, update
+its download URL in [build/download.ts](build/download.ts) and its version and
+SHA-256 in [build/pyodide-wheels.txt](build/pyodide-wheels.txt). Also update the
+filename where the kernel loads the wheel:
+
+- **seaborn:** Update the wheel filename in [src/tools.ts](src/tools.ts).
+- **comm:** Update `commWheelUrl` in [src/node/index.ts on the `pyodide` branch](https://github.com/microsoft/vscode-data-analysis-for-copilot/blob/pyodide/src/node/index.ts).
+  Follow [that branch's build instructions](https://github.com/microsoft/vscode-data-analysis-for-copilot/blob/pyodide/README.md)
+  to rebuild and commit `resources/pyodide.zip` on `pyodide`. The extension build takes the archive from that branch.
